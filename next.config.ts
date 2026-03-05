@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "aegis-ai-backend-yqaf.onrender.com",
+        hostname: "credence-ai-backend-yqaf.onrender.com",
       },
     ],
   },

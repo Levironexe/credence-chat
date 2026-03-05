@@ -140,7 +140,7 @@ const PurePreviewMessage = ({
                   <div key={key}>
                     <MessageContent
                       className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2 text-right text-white text-[15px]":
+                        "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
                           message.role === "user",
                         "bg-transparent px-0 py-0 text-left text-[15px]":
                           message.role === "assistant",
@@ -255,7 +255,7 @@ const PurePreviewMessage = ({
                             Deny
                           </button>
                           <button
-                            className="rounded-[14px] bg-background px-3 py-1.5 text-primary-foreground text-[15px] transition-colors hover:bg-background/90"
+                            className=" bg-background px-3 py-1.5 text-primary-foreground text-[15px] transition-colors hover:bg-background/90"
                             onClick={() => {
                               addToolApprovalResponse({
                                 id: approvalId,

@@ -1,5 +1,5 @@
 // Curated list of top models from Vercel AI Gateway
-// Using Aegis Agent by default for multi-step cybersecurity investigations
+// Using Credence Agent by default for multi-step cybersecurity investigations
 export const DEFAULT_CHAT_MODEL = "agent/cyber-analyst";
 
 export type ChatModel = {
@@ -10,11 +10,11 @@ export type ChatModel = {
 };
 
 export const chatModels: ChatModel[] = [
-  // Aegis Agent (LangGraph multi-step reasoning)
+  // Credence Agent (LangGraph multi-step reasoning)
   {
     id: "claude/claude-haiku-4.5",
-    name: "Claude Haiku 4.5 (Aegis Agent)",
-    provider: "Anthropic",
+    name: "Claude Haiku 4.5 (Credence Agent)",
+    provider: "Agent",
     description: "Multi-step investigation agent with tool orchestration and MITRE ATT&CK mapping",
   },
   // Anthropic

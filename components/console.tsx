@@ -167,7 +167,7 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
                       <picture key={`${consoleOutput.id}-${contentIndex}`}>
                         <img
                           alt="output"
-                          className="w-full max-w-(--breakpoint-toast-mobile) rounded-[14px]"
+                          className="w-full max-w-(--breakpoint-toast-mobile) rounded-md"
                           src={content.value}
                         />
                       </picture>

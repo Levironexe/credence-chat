@@ -31,7 +31,7 @@ export async function generateMetadata(props: {
     console.error('[generateMetadata] Error fetching chat:', error);
     // Return default title if there's a database error
     return {
-      title: "Aegis",
+      title: "Credence",
     };
   }
 }
