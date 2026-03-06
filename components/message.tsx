@@ -23,12 +23,12 @@ import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
-import { ToolCallsDisplay } from "./tool-calls-display";
+import { StreamingAgentDisplay } from "./streaming-agent-display";
 import {
-  parseToolCallsFromMarkdown,
-  stripToolCallsFromMarkdown,
-  hasToolCalls,
-} from "@/lib/parse-tool-calls";
+  parseAgentStream,
+  hasAgentWorkflow,
+  stripAgentWorkflow,
+} from "@/lib/parse-agent-stream";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -142,30 +142,29 @@ const PurePreviewMessage = ({
 
             if (type === "text") {
               if (mode === "view") {
-                // Parse tool calls from markdown if present
-                const toolCalls =
-                  message.role === "assistant" && hasToolCalls(part.text)
-                    ? parseToolCallsFromMarkdown(part.text)
-                    : [];
+                // Parse agent workflow from markdown if present
+                const hasWorkflow =
+                  message.role === "assistant" && hasAgentWorkflow(part.text);
+                const agentState = hasWorkflow
+                  ? parseAgentStream(part.text)
+                  : null;
 
-                // Strip tool call section from markdown to avoid duplication
-                const cleanedText =
-                  toolCalls.length > 0
-                    ? stripToolCallsFromMarkdown(part.text)
-                    : part.text;
+                // Strip workflow sections to get just the final response
+                const cleanedText = hasWorkflow
+                  ? stripAgentWorkflow(part.text)
+                  : part.text;
 
                 return (
                   <div key={key} className="flex flex-col gap-4">
-                    {/* Tool Calls Display */}
-                    {toolCalls.length > 0 && (
-                      <ToolCallsDisplay
-                        toolCalls={toolCalls}
-                        mode="transparent"
+                    {/* Streaming Agent Display */}
+                    {agentState && (
+                      <StreamingAgentDisplay
+                        state={agentState}
                       />
                     )}
 
-                    {/* Message Content */}
-                    {cleanedText && cleanedText.trim() && (
+                    {/* Message Content (if not already in agent response) */}
+                    {!agentState && cleanedText && cleanedText.trim() && (
                       <MessageContent
                         className={cn({
                           "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
