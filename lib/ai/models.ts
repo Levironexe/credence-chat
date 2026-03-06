@@ -1,6 +1,6 @@
 // Curated list of top models from Vercel AI Gateway
-// Using Credence Agent by default for multi-step cybersecurity investigations
-export const DEFAULT_CHAT_MODEL = "agent/cyber-analyst";
+// Using Credence Agent by default for multi-step loan assessment
+export const DEFAULT_CHAT_MODEL = "agent/loan-analyst";
 
 export type ChatModel = {
   id: string;
@@ -12,10 +12,10 @@ export type ChatModel = {
 export const chatModels: ChatModel[] = [
   // Credence Agent (LangGraph multi-step reasoning)
   {
-    id: "claude/claude-haiku-4.5",
-    name: "Claude Haiku 4.5 (Credence Agent)",
+    id: "agent/loan-analyst",
+    name: "Loan Analyst (Credence Agent)",
     provider: "Agent",
-    description: "Multi-step investigation agent with tool orchestration and MITRE ATT&CK mapping",
+    description: "Multi-step loan assessment agent with tool orchestration and regulatory compliance",
   },
   // Anthropic
   {
@@ -23,6 +23,12 @@ export const chatModels: ChatModel[] = [
     name: "Claude Haiku 3.5",
     provider: "Anthropic",
     description: "Fast and affordable, great for everyday tasks",
+  },
+  {
+    id: "claude/claude-haiku-4.5",
+    name: "Claude Haiku 4.5",
+    provider: "Anthropic",
+    description: "Fastest Claude model (Oct 2025) - no tools",
   },
   {
     id: "anthropic/claude-sonnet-4.5",
