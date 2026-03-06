@@ -23,6 +23,12 @@ import { MessageEditor } from "./message-editor";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { ToolCallsDisplay } from "./tool-calls-display";
+import {
+  parseToolCallsFromMarkdown,
+  stripToolCallsFromMarkdown,
+  hasToolCalls,
+} from "@/lib/parse-tool-calls";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -136,25 +142,47 @@ const PurePreviewMessage = ({
 
             if (type === "text") {
               if (mode === "view") {
+                // Parse tool calls from markdown if present
+                const toolCalls =
+                  message.role === "assistant" && hasToolCalls(part.text)
+                    ? parseToolCallsFromMarkdown(part.text)
+                    : [];
+
+                // Strip tool call section from markdown to avoid duplication
+                const cleanedText =
+                  toolCalls.length > 0
+                    ? stripToolCallsFromMarkdown(part.text)
+                    : part.text;
+
                 return (
-                  <div key={key}>
-                    <MessageContent
-                      className={cn({
-                        "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
-                          message.role === "user",
-                        "bg-transparent px-0 py-0 text-left text-[15px]":
-                          message.role === "assistant",
-                        
-                      })}
-                      data-testid="message-content"
-                      style={
-                        message.role === "user"
-                          ? { backgroundColor: "#171717" }
-                          : undefined
-                      }
-                    >
-                      <Response>{sanitizeText(part.text)}</Response>
-                    </MessageContent>
+                  <div key={key} className="flex flex-col gap-4">
+                    {/* Tool Calls Display */}
+                    {toolCalls.length > 0 && (
+                      <ToolCallsDisplay
+                        toolCalls={toolCalls}
+                        mode="transparent"
+                      />
+                    )}
+
+                    {/* Message Content */}
+                    {cleanedText && cleanedText.trim() && (
+                      <MessageContent
+                        className={cn({
+                          "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
+                            message.role === "user",
+                          "bg-transparent px-0 py-0 text-left text-[15px]":
+                            message.role === "assistant",
+                        })}
+                        data-testid="message-content"
+                        style={
+                          message.role === "user"
+                            ? { backgroundColor: "#171717" }
+                            : undefined
+                        }
+                      >
+                        <Response>{sanitizeText(cleanedText)}</Response>
+                      </MessageContent>
+                    )}
                   </div>
                 );
               }
