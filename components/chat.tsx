@@ -1,9 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { ChatHeader } from "@/components/chat-header";
@@ -18,21 +16,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useArtifactSelector } from "@/hooks/use-artifact";
-import { useAutoResume } from "@/hooks/use-auto-resume";
 import { useChatVisibility } from "@/hooks/use-chat-visibility";
 import type { Vote } from "@/lib/db/schema";
-import { ChatSDKError } from "@/lib/errors";
 import type { Attachment, ChatMessage } from "@/lib/types";
-import { fetcher, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
+import { fetcher, generateUUID } from "@/lib/utils";
 import { getBackendUrl } from "@/lib/api/client";
 import { Artifact } from "./artifact";
-import { useDataStream } from "./data-stream-provider";
 import { Greeting } from "./greeting";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
+import { ProcessViewer } from "./process-viewer";
+import { useStructuredChat } from "@/hooks/use-structured-chat";
+import { useMessageAdapter } from "@/hooks/use-message-adapter";
 
 export function Chat({
   id,
@@ -68,7 +66,6 @@ export function Chat({
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [router]);
-  const { setDataStream } = useDataStream();
 
   const [input, setInput] = useState<string>("");
   const [showCreditCardAlert, setShowCreditCardAlert] = useState(false);
@@ -80,104 +77,71 @@ export function Chat({
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
 
+  // Use structured chat for real-time SSE events
   const {
-    messages,
-    setMessages,
-    sendMessage,
-    status,
+    messages: rawMessages,
+    setMessages: setRawMessages,
+    sendMessage: sendStructuredMessage,
+    collapsibleSections,
+    isStreaming,
     stop,
-    regenerate,
-    resumeStream,
-    addToolApprovalResponse,
-  } = useChat<ChatMessage>({
-    id,
-    messages: initialMessages,
-    generateId: generateUUID,
-    sendAutomaticallyWhen: ({ messages: currentMessages }) => {
-      const lastMessage = currentMessages.at(-1);
-      const shouldContinue =
-        lastMessage?.parts?.some(
-          (part) =>
-            "state" in part &&
-            part.state === "approval-responded" &&
-            "approval" in part &&
-            (part.approval as { approved?: boolean })?.approved === true
-        ) ?? false;
-      return shouldContinue;
-    },
-    transport: new DefaultChatTransport({
-      api: "/api/chat",
-      fetch: fetchWithErrorHandlers,
-      prepareSendMessagesRequest(request) {
-        const lastMessage = request.messages.at(-1);
-        const isToolApprovalContinuation =
-          lastMessage?.role !== "user" ||
-          request.messages.some((msg) =>
-            msg.parts?.some((part) => {
-              if (!part) return false;
-              const state = (part as { state?: string }).state;
-              return (
-                state === "approval-responded" || state === "output-denied"
-              );
-            })
-          );
+  } = useStructuredChat();
 
-        return {
-          body: {
-            id: request.id,
-            ...(isToolApprovalContinuation
-              ? { messages: request.messages }
-              : { message: lastMessage }),
-            selectedChatModel: currentModelIdRef.current,
-            selectedVisibilityType: visibilityType,
-            ...request.body,
-          },
-        };
-      },
-    }),
-    onData: (dataPart) => {
-      setDataStream((ds) => (ds ? [...ds, dataPart] : []));
-    },
-    onFinish: () => {
-      // Inject provider into the last assistant message's metadata
-      const provider = currentModelIdRef.current?.split("/")[0] || null;
-      if (provider) {
-        setMessages((currentMessages) => {
-          const lastMessage = currentMessages[currentMessages.length - 1];
-          if (lastMessage?.role === "assistant" && !lastMessage.metadata?.provider) {
-            return currentMessages.map((msg, idx) => {
-              if (idx === currentMessages.length - 1) {
-                return {
-                  ...msg,
-                  metadata: {
-                    createdAt: msg.metadata?.createdAt || new Date().toISOString(),
-                    provider,
-                  },
-                } as ChatMessage;
-              }
-              return msg;
-            });
-          }
-          return currentMessages;
-        });
+  // Convert simple messages to ChatMessage format
+  const currentProvider = currentModelIdRef.current?.split("/")[0];
+  const messages = useMessageAdapter(rawMessages, initialMessages, currentProvider);
+
+  // Wrapper to handle both string and ChatMessage inputs (async to match useChat signature)
+  const sendMessage = useCallback(
+    async (messageOrText?: any): Promise<void> => {
+      if (!messageOrText) return;
+
+      let text: string;
+
+      if (typeof messageOrText === "string") {
+        text = messageOrText;
+      } else {
+        // Extract text from ChatMessage parts (handles both full and partial ChatMessage)
+        const textPart = messageOrText.parts?.find((p: any) => p.type === "text");
+        text = (textPart as { text?: string })?.text || "";
       }
+
+      if (!text.trim()) return;
+
+      sendStructuredMessage(text, {
+        id,
+        model: currentModelIdRef.current,
+      });
+    },
+    [sendStructuredMessage, id]
+  ) as any; // Type assertion to match UseChatHelpers signature
+
+  // Stub functions for compatibility
+  const regenerate = useCallback(() => {
+    console.warn("regenerate: Not implemented with useStructuredChat");
+  }, []);
+
+  const resumeStream = useCallback(() => {
+    console.warn("resumeStream: Not implemented with useStructuredChat");
+  }, []);
+
+  const addToolApprovalResponse = useCallback(() => {
+    console.warn("addToolApprovalResponse: Not implemented with useStructuredChat");
+  }, []);
+
+  const setMessages = useCallback(() => {
+    console.warn("setMessages: Not implemented with useStructuredChat");
+  }, []);
+
+  // Map isStreaming to status for compatibility
+  const status = isStreaming ? "streaming" : "ready";
+
+  // Handle onFinish equivalent - update chat history when streaming stops
+  useEffect(() => {
+    if (!isStreaming && rawMessages.length > 0) {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
-    },
-    onError: (error) => {
-      if (error instanceof ChatSDKError) {
-        if (
-          error.message?.includes("AI Gateway requires a valid credit card")
-        ) {
-          setShowCreditCardAlert(true);
-        } else {
-          toast({
-            type: "error",
-            description: error.message,
-          });
-        }
-      }
-    },
-  });
+    }
+  }, [isStreaming, rawMessages.length, mutate]);
 
   const searchParams = useSearchParams();
   const query = searchParams.get("query");
@@ -204,12 +168,13 @@ export function Chat({
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
 
-  useAutoResume({
-    autoResume,
-    initialMessages,
-    resumeStream,
-    setMessages,
-  });
+  // Note: useAutoResume disabled - not compatible with useStructuredChat
+  // useAutoResume({
+  //   autoResume,
+  //   initialMessages,
+  //   resumeStream,
+  //   setMessages,
+  // });
 
   return (
     <>
@@ -257,6 +222,19 @@ export function Chat({
               status={status}
               votes={votes}
             />
+
+            {/* Real-time collapsible process viewer from SSE events */}
+            {collapsibleSections.length > 0 && (
+              <div className="mx-auto w-full max-w-4xl px-2 pb-3 md:px-4">
+                <div className="mb-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                  <h3 className="text-xs font-semibold mb-2 text-amber-800 dark:text-amber-400 flex items-center gap-2 uppercase tracking-wide">
+                    <span>🔧</span>
+                    Internal Process
+                  </h3>
+                  <ProcessViewer sections={collapsibleSections} />
+                </div>
+              </div>
+            )}
 
             <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
               {!isReadonly && (

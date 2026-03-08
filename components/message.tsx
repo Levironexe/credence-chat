@@ -27,7 +27,6 @@ import { StreamingAgentDisplay } from "./streaming-agent-display";
 import {
   parseAgentStream,
   hasAgentWorkflow,
-  stripAgentWorkflow,
 } from "@/lib/parse-agent-stream";
 
 const PurePreviewMessage = ({
@@ -142,47 +141,41 @@ const PurePreviewMessage = ({
 
             if (type === "text") {
               if (mode === "view") {
-                // Parse agent workflow from markdown if present
+                // Check if this is an agent workflow message
                 const hasWorkflow =
                   message.role === "assistant" && hasAgentWorkflow(part.text);
-                const agentState = hasWorkflow
-                  ? parseAgentStream(part.text)
-                  : null;
 
-                // Strip workflow sections to get just the final response
-                const cleanedText = hasWorkflow
-                  ? stripAgentWorkflow(part.text)
-                  : part.text;
+                if (hasWorkflow) {
+                  // Parse workflow state with ordered sections (thought -> text -> tools -> text)
+                  const agentState = parseAgentStream(part.text);
 
+                  return (
+                    <div key={key} className="flex flex-col">
+                      {/* Render ordered sections: boxes for thought/tools, normal text for response */}
+                      <StreamingAgentDisplay state={agentState} />
+                    </div>
+                  );
+                }
+
+                // Regular message (no agent workflow)
                 return (
-                  <div key={key} className="flex flex-col gap-4">
-                    {/* Streaming Agent Display */}
-                    {agentState && (
-                      <StreamingAgentDisplay
-                        state={agentState}
-                      />
-                    )}
-
-                    {/* Message Content (if not already in agent response) */}
-                    {!agentState && cleanedText && cleanedText.trim() && (
-                      <MessageContent
-                        className={cn({
-                          "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
-                            message.role === "user",
-                          "bg-transparent px-0 py-0 text-left text-[15px]":
-                            message.role === "assistant",
-                        })}
-                        data-testid="message-content"
-                        style={
-                          message.role === "user"
-                            ? { backgroundColor: "#171717" }
-                            : undefined
-                        }
-                      >
-                        <Response>{sanitizeText(cleanedText)}</Response>
-                      </MessageContent>
-                    )}
-                  </div>
+                  <MessageContent
+                    key={key}
+                    className={cn({
+                      "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
+                        message.role === "user",
+                      "bg-transparent px-0 py-0 text-left text-[15px]":
+                        message.role === "assistant",
+                    })}
+                    data-testid="message-content"
+                    style={
+                      message.role === "user"
+                        ? { backgroundColor: "#171717" }
+                        : undefined
+                    }
+                  >
+                    <Response>{sanitizeText(part.text)}</Response>
+                  </MessageContent>
                 );
               }
 

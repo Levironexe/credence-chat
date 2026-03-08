@@ -52,7 +52,7 @@
 
 /* define design tokens (dark mode) */
 .dark {
-  --background: hsl(0, 0%, 6%);
+  --background: hsl(0, 0%, 4%);
   --foreground: hsl(0 0% 98%);
   --card: hsl(0, 0%, 6%);
   --card-foreground: hsl(0 0% 98%);

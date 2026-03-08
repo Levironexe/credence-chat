@@ -8,11 +8,11 @@ export const Greeting = () => {
       key="overview"
     >
       <motion.div
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+        transition={{ delay: 0.2, duration: 0.4 }}
         className="text-2xl mb-2 flex gap-2 items-center font-lora"
-        exit={{ opacity: 0, y: 10 }}
-        initial={{ opacity: 0, y: 10 }}
-        transition={{ delay: 0.2 }}
       >
         <Image
           alt="App logo"
@@ -23,12 +23,13 @@ export const Greeting = () => {
         />
         Hello there!
       </motion.div>
+
       <motion.div
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        exit={{ opacity: 0, y: 10, filter: "blur(8px)" }}
+        transition={{ delay: 0.35, duration: 0.4 }}
         className="text-[32px] font-lora"
-        exit={{ opacity: 0, y: 10 }}
-        initial={{ opacity: 0, y: 10 }}
-        transition={{ delay: 0.3 }}
       >
         Where should we start?
       </motion.div>
