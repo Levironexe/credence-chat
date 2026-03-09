@@ -110,7 +110,7 @@ export const creditFactors: CreditFactor[] = [
     severity: 'high',
     description:
       'A payment was 30 days late in the past 6 months. This impacts creditworthiness significantly.',
-    icon: '❌',
+    icon: '',
   },
   {
     id: 'negative-4',

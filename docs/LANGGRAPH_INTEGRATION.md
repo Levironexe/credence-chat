@@ -274,7 +274,7 @@ This query requires IOC analysis...
 
 # 🛠️ Tool Selection
 
-🔧 **Using tool**: `analyze_ioc`
+ **Using tool**: `analyze_ioc`
  ✓
 
 # 📊 Threat Analysis
@@ -655,7 +655,7 @@ The current implementation is a **functional baseline** with several areas for i
   User: "Analyze IP 1.2.3.4"
   Agent: [Full investigation]
   User: "What about the domain associated with it?"
-  Agent: ❌ Doesn't remember the IP!
+  Agent:  Doesn't remember the IP!
   ```
 - **Improvement Needed**: Conversation history tracking and context awareness
 

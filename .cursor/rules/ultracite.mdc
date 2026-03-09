@@ -324,7 +324,7 @@ try {
   return { success: false, error: error.message };
 }
 
-// ❌ Bad: Swallowing errors
+//  Bad: Swallowing errors
 try {
   return await fetchData();
 } catch (e) {

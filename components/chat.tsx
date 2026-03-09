@@ -83,13 +83,15 @@ export function Chat({
     setMessages: setRawMessages,
     sendMessage: sendStructuredMessage,
     collapsibleSections,
+    timeline: liveTimeline,
     isStreaming,
     stop,
   } = useStructuredChat();
 
   // Convert simple messages to ChatMessage format
+  // Pass liveTimeline to attach to streaming message
   const currentProvider = currentModelIdRef.current?.split("/")[0];
-  const messages = useMessageAdapter(rawMessages, initialMessages, currentProvider);
+  const messages = useMessageAdapter(rawMessages, initialMessages, currentProvider, liveTimeline);
 
   // Wrapper to handle both string and ChatMessage inputs (async to match useChat signature)
   const sendMessage = useCallback(
@@ -117,15 +119,15 @@ export function Chat({
   ) as any; // Type assertion to match UseChatHelpers signature
 
   // Stub functions for compatibility
-  const regenerate = useCallback(() => {
+  const regenerate = useCallback(async () => {
     console.warn("regenerate: Not implemented with useStructuredChat");
   }, []);
 
-  const resumeStream = useCallback(() => {
+  const resumeStream = useCallback(async () => {
     console.warn("resumeStream: Not implemented with useStructuredChat");
   }, []);
 
-  const addToolApprovalResponse = useCallback(() => {
+  const addToolApprovalResponse = useCallback(async () => {
     console.warn("addToolApprovalResponse: Not implemented with useStructuredChat");
   }, []);
 
@@ -210,31 +212,25 @@ export function Chat({
           </div>
         ) : (
           <>
-            <Messages
-              addToolApprovalResponse={addToolApprovalResponse}
-              chatId={id}
-              isArtifactVisible={isArtifactVisible}
-              isReadonly={isReadonly}
-              messages={messages}
-              regenerate={regenerate}
-              selectedModelId={currentModelId}
-              setMessages={setMessages}
-              status={status}
-              votes={votes}
-            />
-
-            {/* Real-time collapsible process viewer from SSE events */}
-            {collapsibleSections.length > 0 && (
-              <div className="mx-auto w-full max-w-4xl px-2 pb-3 md:px-4">
-                <div className="mb-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
-                  <h3 className="text-xs font-semibold mb-2 text-amber-800 dark:text-amber-400 flex items-center gap-2 uppercase tracking-wide">
-                    <span>🔧</span>
-                    Internal Process
-                  </h3>
-                  <ProcessViewer sections={collapsibleSections} />
-                </div>
+            <div className="relative flex-1 overflow-y-auto min-h-0">
+              <div className="h-full">
+                {/* Show all messages - each message renders its own timeline */}
+                {messages.length > 0 && (
+                  <Messages
+                    addToolApprovalResponse={addToolApprovalResponse}
+                    chatId={id}
+                    isArtifactVisible={isArtifactVisible}
+                    isReadonly={isReadonly}
+                    messages={messages}
+                    regenerate={regenerate}
+                    selectedModelId={currentModelId}
+                    setMessages={setMessages}
+                    status={status}
+                    votes={votes}
+                  />
+                )}
               </div>
-            )}
+            </div>
 
             <div className="sticky bottom-0 z-1 mx-auto flex w-full max-w-4xl gap-2 border-t-0 bg-background px-2 pb-3 md:px-4 md:pb-4">
               {!isReadonly && (

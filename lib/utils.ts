@@ -119,15 +119,54 @@ export function sanitizeText(text: string) {
 }
 
 export function convertToUIMessages(messages: DBMessage[]): ChatMessage[] {
-  return messages.map((message) => ({
-    id: message.id,
-    role: message.role as 'user' | 'assistant' | 'system',
-    parts: message.parts as UIMessagePart<CustomUIDataTypes, ChatTools>[],
-    metadata: {
-      createdAt: formatISO(message.createdAt),
-      provider: message.provider || undefined,
-    },
-  }));
+  return messages.map((message) => {
+    // Convert simple parts from database to AI SDK format
+    const parts = (message.parts as any[]).map((part: any) => {
+      // Convert simple part types to AI SDK data parts
+      if (part.type === 'tool-call') {
+        return {
+          type: 'data-tool-call' as const,
+          data: { name: part.name, input: part.input },
+        };
+      }
+      if (part.type === 'tool-result') {
+        return {
+          type: 'data-tool-result' as const,
+          data: {
+            name: part.name,
+            input: part.input,
+            output: part.output,
+            isError: part.isError,
+          },
+        };
+      }
+      if (part.type === 'reasoning') {
+        return {
+          type: 'data-reasoning' as const,
+          data: { content: part.content, node: part.node },
+        };
+      }
+      if (part.type === 'node-start') {
+        return {
+          type: 'data-node-start' as const,
+          data: { title: part.title, node: part.node },
+        };
+      }
+      // Text parts and other types remain as-is
+      return part;
+    });
+
+    return {
+      id: message.id,
+      role: message.role as 'user' | 'assistant' | 'system',
+      parts: parts as UIMessagePart<CustomUIDataTypes, ChatTools>[],
+      metadata: {
+        createdAt: formatISO(message.createdAt),
+        provider: message.provider || undefined,
+        timelineEvents: message.timelineEvents as any[] | undefined,
+      },
+    };
+  });
 }
 
 export function getTextFromMessage(message: ChatMessage | UIMessage): string {

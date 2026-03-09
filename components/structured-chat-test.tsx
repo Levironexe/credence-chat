@@ -1,7 +1,6 @@
 "use client";
 
 import { useStructuredChat } from "@/hooks/use-structured-chat";
-import { ProcessViewer } from "@/components/process-viewer";
 import { useState } from "react";
 
 export function StructuredChatTest() {
@@ -58,16 +57,6 @@ Please assess this loan application.`);
           </div>
         ))}
 
-        {/* Process viewer - collapsible sections */}
-        {collapsibleSections.length > 0 && (
-          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-lg border border-amber-200 dark:border-amber-800">
-            <h3 className="text-sm font-semibold mb-3 text-amber-800 dark:text-amber-400 flex items-center gap-2">
-              <span>🔧</span>
-              Internal Process (Collapsible)
-            </h3>
-            <ProcessViewer sections={collapsibleSections} />
-          </div>
-        )}
 
         {isStreaming && (
           <div className="flex items-center gap-2 text-sm text-gray-500">

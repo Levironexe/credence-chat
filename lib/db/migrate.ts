@@ -9,7 +9,7 @@ config({
 
 const runMigrate = async () => {
   if (!process.env.POSTGRES_URL) {
-    console.log("⏭️  POSTGRES_URL not defined, skipping migrations");
+    console.log("  POSTGRES_URL not defined, skipping migrations");
     process.exit(0);
   }
 
@@ -27,7 +27,7 @@ const runMigrate = async () => {
 };
 
 runMigrate().catch((err) => {
-  console.error("❌ Migration failed");
+  console.error(" Migration failed");
   console.error(err);
   process.exit(1);
 });

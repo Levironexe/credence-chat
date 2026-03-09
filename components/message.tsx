@@ -28,6 +28,7 @@ import {
   parseAgentStream,
   hasAgentWorkflow,
 } from "@/lib/parse-agent-stream";
+import { TimelineRenderer } from "./timeline-renderer";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -375,8 +376,80 @@ const PurePreviewMessage = ({
               );
             }
 
+            // New unified part types from SSE handler
+            if (type === "data-tool-call" && "data" in part) {
+              const toolData = part.data as { name: string; input: Record<string, any> };
+              return (
+                <Tool defaultOpen={false} key={key}>
+                  <ToolHeader state="input-available" type={`tool-${toolData.name}`} />
+                  <ToolContent>
+                    <ToolInput input={toolData.input} />
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === "data-tool-result" && "data" in part) {
+              const toolData = part.data as { name: string; input: Record<string, any>; output: any; isError?: boolean };
+              return (
+                <Tool defaultOpen={false} key={key}>
+                  <ToolHeader
+                    state={toolData.isError ? "output-denied" : "output-available"}
+                    type={`tool-${toolData.name}`}
+                  />
+                  <ToolContent>
+                    <ToolInput input={toolData.input} />
+                    <ToolOutput
+                      errorText={toolData.isError ? "Tool execution failed" : undefined}
+                      output={
+                        <div className="text-sm">
+                          <pre className="whitespace-pre-wrap">{JSON.stringify(toolData.output, null, 2)}</pre>
+                        </div>
+                      }
+                    />
+                  </ToolContent>
+                </Tool>
+              );
+            }
+
+            if (type === "data-node-start" && "data" in part) {
+              const nodeData = part.data as { title: string; node: string };
+              return (
+                <div key={key} className="text-sm text-muted-foreground py-1">
+                  <span className="font-medium">▸ {nodeData.title}</span>
+                </div>
+              );
+            }
+
+            if (type === "data-reasoning" && "data" in part) {
+              const reasoningData = part.data as { content: string; node?: string };
+              const hasContent = reasoningData.content?.trim().length > 0;
+              if (hasContent) {
+                return (
+                  <MessageReasoning
+                    isLoading={isLoading}
+                    key={key}
+                    reasoning={reasoningData.content}
+                  />
+                );
+              }
+            }
+
             return null;
           })}
+
+          {/* Render timeline ONLY for old messages without unified parts (backwards compatibility) */}
+          {message.role === "assistant" &&
+           message.metadata?.timelineEvents &&
+           message.metadata.timelineEvents.length > 0 &&
+           !message.parts?.some((p) =>
+             p.type === "data-tool-call" ||
+             p.type === "data-tool-result" ||
+             p.type === "data-reasoning" ||
+             p.type === "data-node-start"
+           ) && (
+            <TimelineRenderer timeline={message.metadata.timelineEvents as any[]} />
+          )}
 
           {!isReadonly && (
             <MessageActions

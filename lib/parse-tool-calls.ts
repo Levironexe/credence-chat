@@ -57,9 +57,9 @@ export function parseToolCallsFromMarkdown(content: string): ToolCall[] {
  * to avoid displaying them twice
  */
 export function stripToolCallsFromMarkdown(content: string): string {
-  // Remove the entire ## 🔧 Tool Execution section
+  // Remove the entire ##  Tool Execution section
   return content.replace(
-    /## 🔧 Tool Execution\s*[\s\S]*?(?=##|$)/g,
+    /##  Tool Execution\s*[\s\S]*?(?=##|$)/g,
     ""
   ).trim();
 }
@@ -68,5 +68,5 @@ export function stripToolCallsFromMarkdown(content: string): string {
  * Check if content contains tool execution section
  */
 export function hasToolCalls(content: string): boolean {
-  return content.includes("## 🔧 Tool Execution");
+  return content.includes("##  Tool Execution");
 }

@@ -65,7 +65,7 @@ onData: (dataPart) => {
   <div className="mx-auto w-full max-w-4xl px-2 pb-3 md:px-4">
     <div className="mb-3 p-3 bg-amber-50/50 dark:bg-amber-900/10 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
       <h3 className="text-xs font-semibold mb-2 text-amber-800 dark:text-amber-400 flex items-center gap-2 uppercase tracking-wide">
-        <span>🔧</span>
+        <span></span>
         Internal Process
       </h3>
       <ProcessViewer sections={collapsibleSections} />
@@ -109,9 +109,9 @@ Visit: `http://localhost:3000/`
 - When agent model is used (`agent/loan-analyst`), collapsible sections appear
 - Process sections show:
   - 📋 Node starts (classify, data_completeness, etc.)
-  - 🔧 Tool calls with inputs
+  -  Tool calls with inputs
   - ✅ Tool results with outputs
-  - 🧠 Reasoning (if any)
+  -  Reasoning (if any)
 - Main response text renders normally in Messages component
 - ProcessViewer appears between Messages and input box
 

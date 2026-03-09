@@ -75,7 +75,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
             <div className="flex flex-row items-center justify-between">
               <Link
                 className="flex flex-row items-center gap-3"
-                href="/"
+                href="/new"
                 onClick={() => {
                   setOpenMobile(false);
                 }}
@@ -108,7 +108,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                       className="h-8 p-1 md:h-fit md:p-2"
                       onClick={() => {
                         setOpenMobile(false);
-                        router.push("/");
+                        router.push("/new");
                         router.refresh();
                       }}
                       type="button"

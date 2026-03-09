@@ -7,7 +7,7 @@ import { useWindowSize } from "usehooks-ts";
 import { SidebarToggle } from "@/components/sidebar-toggle";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, VercelIcon } from "./icons";
-import { LayoutDashboardIcon } from "lucide-react";
+import { LayoutDashboardIcon, House } from "lucide-react";
 import { useSidebar } from "./ui/sidebar";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
 
@@ -26,7 +26,7 @@ function PureChatHeader({
   const { width: windowWidth } = useWindowSize();
 
   return (
-    <header className="fixed top-0 w-full flex items-center gap-2 bg-background/80 px-2 py-1.5 md:px-2 z-50 backdrop-blur-xl">
+    <header className="fixed top-0 w-full flex items-center gap-2 bg-background/50 px-2 py-1.5 md:px-2 z-50 backdrop-blur-xl">
       <div className="flex items-center gap-2">
 <SidebarToggle />
 
@@ -65,7 +65,17 @@ function PureChatHeader({
       >
         <LayoutDashboardIcon className="h-16 w-16" />
 
-        <span className="">Dashboard</span>
+        <span className="leading-none ">Dashboard</span>
+      </Button>      
+      <Button
+        className="order-0 ml-auto h-8 px-2 md:order-1 md:ml-0 md:h-fit md:px-2"
+        onClick={() => {
+          router.push("/");
+          router.refresh();
+        }}
+        variant="outline"
+      >
+        <House className="h-16 w-16" />
       </Button>
     </header>
   );

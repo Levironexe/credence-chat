@@ -118,7 +118,7 @@ export function parseAgentStream(markdown: string): StreamingAgentState {
       state.tools.push(toolEvent);
       toolsInSection.push(toolEvent);
     } catch (error) {
-      console.warn(`❌ Failed to parse tool:`, toolName, error);
+      console.warn(` Failed to parse tool:`, toolName, error);
     }
 
     lastIndex = toolMatch.index + toolMatch[0].length;
@@ -174,7 +174,7 @@ export function stripAgentWorkflow(markdown: string): string {
   );
 
   // Remove tool execution section (entire section with all tool calls)
-  cleaned = cleaned.replace(/## 🔧 Tool Execution\s*[\s\S]*?(?=##|$)/, "");
+  cleaned = cleaned.replace(/##  Tool Execution\s*[\s\S]*?(?=##|$)/, "");
 
   // Remove ALL tool call blocks - matches from "**Tool called:**" until next tool or section
   // This handles cases where Output might not have a code block or might just say "Tool called: X"

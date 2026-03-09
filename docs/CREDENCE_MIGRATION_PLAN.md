@@ -67,7 +67,7 @@
 **Reuse Strategy (80% code reuse)**:
 
 ✅ **Keep**: Core agent orchestration framework, tool architecture, streaming infrastructure, database models, authentication
-🔧 **Adapt**: Agent prompts, state schema, workflow graph structure
+ **Adapt**: Agent prompts, state schema, workflow graph structure
 🆕 **Replace**: Domain-specific tools (security → financial), RAG knowledge content, specialized agents
 🗑️ **Remove**: Cybersecurity-specific tools, MITRE ATT&CK integration, security-focused middleware
 
@@ -315,16 +315,16 @@ async for event in langgraph_agent.astream_events(state, version="v2"):
 | `specialized_agents.py` | Security-focused agents | Finance-focused agents | **Modify** (replace agent roles) |
 | `AgentFactory` | Agent creation and caching | Same | **Reuse** (change agent definitions) |
 | **Tools** | | | |
-| `signature_detector` | Detect SQLi, XSS, command injection | ❌ Not applicable | **Remove** |
+| `signature_detector` | Detect SQLi, XSS, command injection |  Not applicable | **Remove** |
 | `anomaly_detector` | Security anomaly detection | Fraud detection in financials | **Modify** (change detection logic) |
 | `mitre_attack_mapper` | Map attacks to MITRE ATT&CK | Map risks to Basel III / credit frameworks | **Modify** (change framework) |
 | `cti_fetcher` | Threat intelligence APIs | Market data / economic indicators | **Modify** (change data sources) |
-| `cve_lookup` | CVE vulnerability database | ❌ Not applicable | **Remove** |
+| `cve_lookup` | CVE vulnerability database |  Not applicable | **Remove** |
 | `severity_scorer` | Security severity scoring | Credit risk scoring | **Modify** (change scoring logic) |
 | `event_correlator` | Correlate security events | Correlate financial trends | **Modify** (adapt correlation logic) |
 | `time_series_analyzer` | Temporal pattern analysis | Financial trend analysis | **Reuse** (mostly unchanged) |
 | `playbook_engine` | Incident response playbooks | Loan approval workflows | **Modify** (change workflow logic) |
-| `firewall_rule_generator` | Generate security rules | ❌ Not applicable | **Remove** |
+| `firewall_rule_generator` | Generate security rules |  Not applicable | **Remove** |
 | `notification_sender` | Alert notifications | Loan decision notifications | **Reuse** (change message templates) |
 | `report_generator` | Security investigation reports | Credit assessment reports | **Modify** (change templates) |
 | `log_file_reader` | Parse security logs | Parse financial documents (PDFs, CSVs) | **Modify** (change parsing logic) |
@@ -791,25 +791,25 @@ class LoanAssessmentState(TypedDict):
 ### 6.1 Cybersecurity-Specific Tools (Complete Removal)
 
 **Directories to Remove**:
-- ❌ [app/tools/detection/signature_detector.py](credence-ai-backend/app/tools/detection/signature_detector.py) - SQLi, XSS detection (not applicable)
-- ❌ [app/tools/detection/ip_reputation_checker.py](credence-ai-backend/app/tools/detection/ip_reputation_checker.py) - IP threat scoring (not applicable)
-- ❌ [app/tools/cti_enrichment/cve_lookup.py](credence-ai-backend/app/tools/cti_enrichment/cve_lookup.py) - CVE database (not applicable)
-- ❌ [app/tools/cti_enrichment/misp_connector.py](credence-ai-backend/app/tools/cti_enrichment/misp_connector.py) - MISP threat sharing (not applicable)
-- ❌ [app/tools/cti_enrichment/stix_parser.py](credence-ai-backend/app/tools/cti_enrichment/stix_parser.py) - STIX/TAXII parsing (not applicable)
-- ❌ [app/tools/incident_response/firewall_rule_generator.py](credence-ai-backend/app/tools/incident_response/firewall_rule_generator.py) - Firewall rules (not applicable)
+-  [app/tools/detection/signature_detector.py](credence-ai-backend/app/tools/detection/signature_detector.py) - SQLi, XSS detection (not applicable)
+-  [app/tools/detection/ip_reputation_checker.py](credence-ai-backend/app/tools/detection/ip_reputation_checker.py) - IP threat scoring (not applicable)
+-  [app/tools/cti_enrichment/cve_lookup.py](credence-ai-backend/app/tools/cti_enrichment/cve_lookup.py) - CVE database (not applicable)
+-  [app/tools/cti_enrichment/misp_connector.py](credence-ai-backend/app/tools/cti_enrichment/misp_connector.py) - MISP threat sharing (not applicable)
+-  [app/tools/cti_enrichment/stix_parser.py](credence-ai-backend/app/tools/cti_enrichment/stix_parser.py) - STIX/TAXII parsing (not applicable)
+-  [app/tools/incident_response/firewall_rule_generator.py](credence-ai-backend/app/tools/incident_response/firewall_rule_generator.py) - Firewall rules (not applicable)
 
 **Justification**: These tools are 100% security-specific with no financial equivalent.
 
 ### 6.2 Security-Focused Example Files (Complete Removal)
 
 **Files to Remove**:
-- ❌ [app/tools/example_ioc_tool.py](credence-ai-backend/app/tools/example_ioc_tool.py) - IOC analysis example
-- ❌ [test_agent.py](test_agent.py) (root level) - Security agent test
+-  [app/tools/example_ioc_tool.py](credence-ai-backend/app/tools/example_ioc_tool.py) - IOC analysis example
+-  [test_agent.py](test_agent.py) (root level) - Security agent test
 
 ### 6.3 MITRE ATT&CK Integration (Complete Removal)
 
 **Files to Remove**:
-- ❌ [app/tools/cti_enrichment/mitre_attack_mapper.py](credence-ai-backend/app/tools/cti_enrichment/mitre_attack_mapper.py)
+-  [app/tools/cti_enrichment/mitre_attack_mapper.py](credence-ai-backend/app/tools/cti_enrichment/mitre_attack_mapper.py)
 
 **Replacement**: Create `risk_framework_mapper.py` that maps to Basel III, credit risk frameworks instead
 
@@ -1497,7 +1497,7 @@ function handleActivityEvent(event: ActivityEvent) {
       break;
 
     case 'tool_start':
-      setActivityLog(prev => [...prev, { icon: '🔧', message: event.message }]);
+      setActivityLog(prev => [...prev, { icon: '', message: event.message }]);
       break;
 
     case 'tool_progress':
@@ -1519,11 +1519,11 @@ function handleActivityEvent(event: ActivityEvent) {
 ```
 🤖 LoanOfficerOrchestrator started
 📄 Processing balance_sheet.pdf (50% complete)
-🔧 FinancialStatementAnalyzer extracting data
+ FinancialStatementAnalyzer extracting data
 💭 Analyzing revenue trends
-🔧 CreditScoreModel computing score
+ CreditScoreModel computing score
 ✅ Credit score: 680 (Good)
-🔧 SHAPExplainer generating explanations
+ SHAPExplainer generating explanations
 🤖 DefaultRiskPredictor evaluating risk
 ✅ No bias detected
 📊 Assessment complete

@@ -170,7 +170,7 @@ The recommended layout separates process from response:
 ├─────────────────────────────────────┤
 │ ▼ 📋 Classifying query...          │  <- Collapsible (closed)
 ├─────────────────────────────────────┤
-│ ▶ 🔧 credit_score_model            │  <- Collapsible (closed)
+│ ▶  credit_score_model            │  <- Collapsible (closed)
 │   Input: {...}                      │
 │   Output: {...}                     │
 ├─────────────────────────────────────┤

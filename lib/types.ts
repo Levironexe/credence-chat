@@ -12,6 +12,7 @@ export type DataPart = { type: "append-message"; message: string };
 export const messageMetadataSchema = z.object({
   createdAt: z.string(),
   provider: z.string().optional(),
+  timelineEvents: z.array(z.any()).optional(),
 });
 
 export type MessageMetadata = z.infer<typeof messageMetadataSchema>;
@@ -43,6 +44,11 @@ export type CustomUIDataTypes = {
   clear: null;
   finish: null;
   "chat-title": string;
+  // Agent workflow parts
+  "tool-call": { name: string; input: Record<string, any> };
+  "tool-result": { name: string; input: Record<string, any>; output: any; isError?: boolean };
+  reasoning: { content: string; node?: string };
+  "node-start": { title: string; node: string };
 };
 
 export type ChatMessage = UIMessage<

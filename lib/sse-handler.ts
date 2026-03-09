@@ -1,14 +1,14 @@
 /**
  * SSE Event Handler for Credence AI
  *
- * Handles structured SSE events from the backend and routes them to appropriate UI sections.
+ * Handles structured SSE events from the backend and builds a parts array.
  *
  * Event types:
- * - text: User-facing text (main response area)
- * - reasoning: Internal LLM reasoning (collapsible section)
- * - tool_call: Tool execution start (collapsible section)
- * - tool_result: Tool execution result (collapsible section)
- * - node_start: Node execution start (collapsible section header)
+ * - text: User-facing text → text part
+ * - reasoning: Internal LLM reasoning → reasoning part
+ * - tool_call: Tool execution start → tool-call part
+ * - tool_result: Tool execution result → updates tool-call to tool-result
+ * - node_start: Node execution start → node-start part
  * - skip: Node skipped notification (muted note)
  */
 
@@ -23,6 +23,15 @@ export interface SSEChunk {
   output?: any;
 }
 
+// Part types for the parts array
+export type MessagePart =
+  | { type: "text"; text: string }
+  | { type: "tool-call"; name: string; input: Record<string, any> }
+  | { type: "tool-result"; name: string; input: Record<string, any>; output: any; isError?: boolean }
+  | { type: "reasoning"; content: string; node?: string }
+  | { type: "node-start"; title: string; node: string };
+
+// Deprecated: kept for backwards compatibility
 export interface CollapsibleSection {
   id: string;
   type: "node" | "tool" | "reasoning";
@@ -32,11 +41,24 @@ export interface CollapsibleSection {
   isStreaming: boolean;
 }
 
+export interface TimelineEvent {
+  id: string;
+  timestamp: number;
+  eventType: "text" | "section";
+  textContent?: string;
+  section?: CollapsibleSection;
+}
+
 export class SSEEventHandler {
+  private parts: MessagePart[] = [];
+  private currentReasoningPart: MessagePart | null = null;
+  private onUpdate: () => void;
+
+  // Deprecated: kept for backwards compatibility
   private collapsibleSections: CollapsibleSection[] = [];
   private currentSection: CollapsibleSection | null = null;
   private mainResponse: string = "";
-  private onUpdate: () => void;
+  private timeline: TimelineEvent[] = [];
 
   constructor(onUpdate: () => void) {
     this.onUpdate = onUpdate;
@@ -76,29 +98,17 @@ export class SSEEventHandler {
   }
 
   /**
-   * Start a new collapsible section for a node
+   * Start a new node - add node-start part
    */
   private handleNodeStart(chunk: SSEChunk) {
-    // Check if we already have a section for this node (prevent duplicates)
-    const existingSection = this.collapsibleSections.find(
-      (s) => s.type === "node" && s.title === chunk.message
-    );
+    const part: MessagePart = {
+      type: "node-start",
+      title: chunk.message || "",
+      node: chunk.node || "",
+    };
+    this.parts.push(part);
 
-    if (existingSection) {
-      // Reopen existing section instead of creating duplicate
-      existingSection.isOpen = true;
-      existingSection.isStreaming = true;
-      this.currentSection = existingSection;
-      return;
-    }
-
-    // Close previous section
-    if (this.currentSection) {
-      this.currentSection.isOpen = false;
-      this.currentSection.isStreaming = false;
-    }
-
-    // Create new section
+    // Backwards compatibility: maintain old timeline structure
     const section: CollapsibleSection = {
       id: `${chunk.node}-${Date.now()}`,
       type: "node",
@@ -107,63 +117,116 @@ export class SSEEventHandler {
       isOpen: true,
       isStreaming: true,
     };
-
     this.collapsibleSections.push(section);
     this.currentSection = section;
+    this.timeline.push({
+      id: section.id,
+      timestamp: Date.now(),
+      eventType: "section",
+      section: section,
+    });
   }
 
   /**
-   * Append reasoning text to current collapsible section
+   * Add reasoning content - append to existing reasoning part or create new one
    */
   private handleReasoning(chunk: SSEChunk) {
-    // Get content from either new format (content) or old format (choices[0].delta.content)
     const content = (chunk as any).content || chunk.choices?.[0]?.delta?.content || "";
 
+    // Check if last part is a reasoning part we can append to
+    const lastPart = this.parts[this.parts.length - 1];
+    if (lastPart && lastPart.type === "reasoning") {
+      lastPart.content += content;
+    } else {
+      // Create new reasoning part
+      const part: MessagePart = {
+        type: "reasoning",
+        content: content,
+        node: chunk.node,
+      };
+      this.parts.push(part);
+      this.currentReasoningPart = part;
+    }
+
+    // Backwards compatibility
     if (this.currentSection) {
       this.currentSection.content += content;
     } else {
-      // No section open, create a generic reasoning section
       const section: CollapsibleSection = {
         id: `reasoning-${Date.now()}`,
         type: "reasoning",
-        title: `🧠 ${chunk.node || "Reasoning"}`,
+        title: ` ${chunk.node || "Reasoning"}`,
         content: content,
         isOpen: true,
         isStreaming: true,
       };
       this.collapsibleSections.push(section);
       this.currentSection = section;
+      this.timeline.push({
+        id: section.id,
+        timestamp: Date.now(),
+        eventType: "section",
+        section: section,
+      });
     }
   }
 
   /**
-   * Start a new tool call collapsible section
+   * Add tool call - creates tool-call part
    */
   private handleToolCall(chunk: SSEChunk) {
-    // Close previous section if it's not a tool section
+    const part: MessagePart = {
+      type: "tool-call",
+      name: chunk.tool || "",
+      input: chunk.input || {},
+    };
+    this.parts.push(part);
+
+    // Backwards compatibility
     if (this.currentSection && this.currentSection.type !== "tool") {
       this.currentSection.isOpen = false;
       this.currentSection.isStreaming = false;
     }
-
     const section: CollapsibleSection = {
       id: `tool-${chunk.tool}-${Date.now()}`,
       type: "tool",
-      title: `🔧 ${chunk.tool}`,
+      title: ` ${chunk.tool}`,
       content: `**Input:**\n\`\`\`json\n${JSON.stringify(chunk.input, null, 2)}\n\`\`\`\n\n*Waiting for result...*`,
       isOpen: true,
       isStreaming: true,
     };
-
     this.collapsibleSections.push(section);
     this.currentSection = section;
+    this.timeline.push({
+      id: section.id,
+      timestamp: Date.now(),
+      eventType: "section",
+      section: section,
+    });
   }
 
   /**
-   * Update tool section with result
+   * Update tool section with result - converts most recent tool-call to tool-result
    */
   private handleToolResult(chunk: SSEChunk) {
-    // Find the matching tool section
+    // Find the most recent tool-call part matching this tool name
+    for (let i = this.parts.length - 1; i >= 0; i--) {
+      const part = this.parts[i];
+      if (part.type === "tool-call" && part.name === chunk.tool) {
+        // Convert tool-call to tool-result
+        const resultPart: MessagePart = {
+          type: "tool-result",
+          name: part.name,
+          input: part.input,
+          output: chunk.output,
+          isError: false,
+        };
+        this.parts[i] = resultPart;
+        break;
+      }
+    }
+
+    // Backwards compatibility
     const section = [...this.collapsibleSections]
       .reverse()
       .find((s) => s.type === "tool" && s.title.includes(chunk.tool || ""));
@@ -208,7 +271,29 @@ export class SSEEventHandler {
 
     // Get content from either new format (content) or old format (choices[0].delta.content)
     const content = (chunk as any).content || chunk.choices?.[0]?.delta?.content || "";
+
+    // Append to existing text part or create new one
+    const lastPart = this.parts[this.parts.length - 1];
+    if (lastPart && lastPart.type === "text") {
+      lastPart.text += content;
+    } else {
+      const part: MessagePart = {
+        type: "text",
+        text: content,
+      };
+      this.parts.push(part);
+    }
+
+    // Backwards compatibility
     this.mainResponse += content;
+
+    // Push text event to timeline
+    this.timeline.push({
+      id: `text-${Date.now()}-${Math.random()}`,
+      timestamp: Date.now(),
+      eventType: "text",
+      textContent: content,
+    });
   }
 
   /**
@@ -216,8 +301,11 @@ export class SSEEventHandler {
    */
   getState() {
     return {
+      parts: this.parts,
+      // Deprecated: kept for backwards compatibility
       collapsibleSections: this.collapsibleSections,
       mainResponse: this.mainResponse,
+      timeline: this.timeline,
       isStreaming: this.currentSection?.isStreaming || false,
     };
   }
@@ -226,9 +314,13 @@ export class SSEEventHandler {
    * Reset state for new message
    */
   reset() {
+    this.parts = [];
+    this.currentReasoningPart = null;
+    // Deprecated: kept for backwards compatibility
     this.collapsibleSections = [];
     this.currentSection = null;
     this.mainResponse = "";
+    this.timeline = [];
     this.onUpdate();
   }
 }
