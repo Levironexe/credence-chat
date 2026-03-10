@@ -163,7 +163,7 @@ const PurePreviewMessage = ({
                   <MessageContent
                     key={key}
                     className={cn({
-                      "wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
+                      "overflow-hidden wrap-break-word w-fit rounded-2xl px-3 py-2  text-white text-[15px]":
                         message.role === "user",
                       "bg-transparent px-0 py-0 text-left text-[15px]":
                         message.role === "assistant",
@@ -391,6 +391,18 @@ const PurePreviewMessage = ({
 
             if (type === "data-tool-result" && "data" in part) {
               const toolData = part.data as { name: string; input: Record<string, any>; output: any; isError?: boolean };
+
+              // Parse output if it's a string (from old timeline conversion)
+              let parsedOutput = toolData.output;
+              if (typeof toolData.output === 'string') {
+                try {
+                  parsedOutput = JSON.parse(toolData.output);
+                } catch {
+                  // Keep as string if parsing fails
+                  parsedOutput = toolData.output;
+                }
+              }
+
               return (
                 <Tool defaultOpen={false} key={key}>
                   <ToolHeader
@@ -403,7 +415,7 @@ const PurePreviewMessage = ({
                       errorText={toolData.isError ? "Tool execution failed" : undefined}
                       output={
                         <div className="text-sm">
-                          <pre className="whitespace-pre-wrap">{JSON.stringify(toolData.output, null, 2)}</pre>
+                          <pre className="whitespace-pre-wrap font-mono text-xs">{JSON.stringify(parsedOutput, null, 2)}</pre>
                         </div>
                       }
                     />
