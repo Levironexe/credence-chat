@@ -25,6 +25,7 @@ import { Artifact } from "./artifact";
 import { Greeting } from "./greeting";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import { SuggestedActions } from "./suggested-actions";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
@@ -190,6 +191,13 @@ export function Chat({
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-8 px-2 pb-16 md:px-4 md:pb-28 w-full max-w-4xl mx-auto">
             <Greeting />
+            {!isReadonly && (
+              <SuggestedActions
+                chatId={id}
+                sendMessage={sendMessage}
+                selectedVisibilityType={visibilityType}
+              />
+            )}
             <div className="w-full">
               {!isReadonly && (
                 <MultimodalInput

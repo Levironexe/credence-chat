@@ -14,55 +14,55 @@ type SuggestedActionsProps = {
 };
 
 function PureSuggestedActions({ chatId, sendMessage }: SuggestedActionsProps) {
-  // const suggestedActions = [
-  //   "Analyze my system logs for suspicious activity",
-  //   "What cyber threats are targeting my industry right now?",
-  //   "Explain this security alert in simple terms",
-  //   "Should I be worried about this IP address?",
-  // ];
+  const suggestedActions = [
+    "Assess applicant #270000",
+    "Score a 35-year-old earning $60,000 with a $150,000 loan",
+    "What factors most affect credit approval?",
+    "Explain how the credit scoring model works",
+  ];
 
-  // return (
-    // <div
-    //   className="grid w-full gap-2 sm:grid-cols-2"
-    //   data-testid="suggested-actions"
-    // >
-    //   {suggestedActions.map((suggestedAction, index) => (
-    //     <motion.div
-    //       animate={{ opacity: 1, y: 0 }}
-    //       exit={{ opacity: 0, y: 20 }}
-    //       initial={{ opacity: 0, y: 20 }}
-    //       key={suggestedAction}
-    //       transition={{ delay: 0.05 * index }}
-    //     >
-    //       <Suggestion
-    //         className="h-auto w-full whitespace-normal p-3 text-left"
-    //         onClick={(suggestion) => {
-    //           window.history.pushState({}, "", `/chat/${chatId}`);
-    //           sendMessage({
-    //             role: "user",
-    //             parts: [{ type: "text", text: suggestion }],
-    //           });
-    //         }}
-    //         suggestion={suggestedAction}
-    //       >
-    //         {suggestedAction}
-    //       </Suggestion>
-    //     </motion.div>
-    //   ))}
-    // </div>
-  // );
+  return (
+    <div
+      className="grid w-full gap-2 sm:grid-cols-2"
+      data-testid="suggested-actions"
+    >
+      {suggestedActions.map((suggestedAction, index) => (
+        <motion.div
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 20 }}
+          key={suggestedAction}
+          transition={{ delay: 0.05 * index }}
+        >
+          <Suggestion
+            className="h-auto w-full whitespace-normal p-3 text-left"
+            onClick={(suggestion) => {
+              window.history.pushState({}, "", `/chat/${chatId}`);
+              sendMessage({
+                role: "user",
+                parts: [{ type: "text", text: suggestion }],
+              });
+            }}
+            suggestion={suggestedAction}
+          >
+            {suggestedAction}
+          </Suggestion>
+        </motion.div>
+      ))}
+    </div>
+  );
 }
 
-// export const SuggestedActions = memo(
-//   PureSuggestedActions,
-//   (prevProps, nextProps) => {
-//     if (prevProps.chatId !== nextProps.chatId) {
-//       return false;
-//     }
-//     if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) {
-//       return false;
-//     }
+export const SuggestedActions = memo(
+  PureSuggestedActions,
+  (prevProps, nextProps) => {
+    if (prevProps.chatId !== nextProps.chatId) {
+      return false;
+    }
+    if (prevProps.selectedVisibilityType !== nextProps.selectedVisibilityType) {
+      return false;
+    }
 
-//     return true;
-//   }
-// );
+    return true;
+  }
+);
