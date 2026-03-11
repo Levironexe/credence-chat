@@ -25,12 +25,14 @@ import { Artifact } from "./artifact";
 import { Greeting } from "./greeting";
 import { Messages } from "./messages";
 import { MultimodalInput } from "./multimodal-input";
+import { SuggestedActions } from "./suggested-actions";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
 import { ProcessViewer } from "./process-viewer";
 import { useStructuredChat } from "@/hooks/use-structured-chat";
 import { useMessageAdapter } from "@/hooks/use-message-adapter";
+import { ApplicantProfilePanel, type ApplicantProfileType } from "./applicant-profile-panel";
 
 export function Chat({
   id,
@@ -72,6 +74,15 @@ export function Chat({
   const [currentModelId, setCurrentModelId] = useState(initialChatModel);
   const currentModelIdRef = useRef(initialChatModel);
 
+  // Applicant profile panel state
+  const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState<ApplicantProfileType | null>(null);
+  const selectedProfileRef = useRef<ApplicantProfileType | null>(null);
+
+  useEffect(() => {
+    selectedProfileRef.current = selectedProfile;
+  }, [selectedProfile]);
+
   // Sync ref with state
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
@@ -110,7 +121,28 @@ export function Chat({
 
       if (!text.trim()) return;
 
-      sendStructuredMessage(text, {
+      // Inject applicant profile context if one is selected
+      const profile = selectedProfileRef.current;
+      let finalText = text;
+      if (profile) {
+        if (profile.id !== "custom") {
+          // Sample applicant — prepend context so backend knows which to load
+          if (!text.toLowerCase().includes("applicant") || !text.match(/#?\d{5,}/)) {
+            finalText = `[Selected Profile: Applicant #${profile.id}] ${text}`;
+          }
+        } else if (profile.fields.length > 0) {
+          // Custom applicant — append field data from DisplayField[]
+          const fieldStr = profile.fields
+            .filter((f) => f.value != null && f.value !== "")
+            .map((f) => `${f.label}: ${f.value}`)
+            .join(", ");
+          if (fieldStr) {
+            finalText = `${text}\n\n[Applicant Profile: ${fieldStr}]`;
+          }
+        }
+      }
+
+      sendStructuredMessage(finalText, {
         id,
         model: currentModelIdRef.current,
       });
@@ -180,7 +212,7 @@ export function Chat({
 
   return (
     <>
-      <div className="overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background">
+      <div className={`overscroll-behavior-contain flex h-dvh min-w-0 touch-pan-y flex-col bg-background transition-all duration-300 ${isProfilePanelOpen ? "mr-80" : ""}`}>
         <ChatHeader
           chatId={id}
           isReadonly={isReadonly}
@@ -190,6 +222,14 @@ export function Chat({
         {messages.length === 0 ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-8 px-2 pb-16 md:px-4 md:pb-28 w-full max-w-4xl mx-auto">
             <Greeting />
+            {!isReadonly && (
+              <SuggestedActions
+                chatId={id}
+                sendMessage={sendMessage}
+                selectedVisibilityType={visibilityType}
+                selectedProfile={selectedProfile}
+              />
+            )}
             <div className="w-full">
               {!isReadonly && (
                 <MultimodalInput
@@ -272,6 +312,13 @@ export function Chat({
         status={status}
         stop={stop}
         votes={votes}
+      />
+
+      <ApplicantProfilePanel
+        isOpen={isProfilePanelOpen}
+        onToggle={() => setIsProfilePanelOpen((prev) => !prev)}
+        selectedProfile={selectedProfile}
+        onProfileChange={setSelectedProfile}
       />
 
       <AlertDialog
