@@ -6,32 +6,16 @@ import {
   ChevronRight,
   Brain,
   Wrench,
-  Calculator,
   CheckCircle2,
-  Search,
-  BarChart3,
-  Lightbulb,
-  Database,
   Loader2,
-  FileText,
-  Shield,
-  User,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-
-const TOOL_ICONS: Record<string, any> = {
-  credit_score_model: Calculator,
-  data_completeness_checker: CheckCircle2,
-  financial_statement_analyzer: FileText,
-  shap_explainer: BarChart3,
-  counterfactual_generator: Lightbulb,
-  fairness_validator: Shield,
-  applicant_lookup: User,
-  lending_knowledge_retriever: Search,
-  database_query: Database,
-  pdf_extractor: FileText,
-  bank_statement_parser: FileText,
-};
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "./elements/tool";
 
 const NODE_LABELS: Record<string, string> = {
   classify: "Classifying query",
@@ -47,61 +31,6 @@ const NODE_LABELS: Record<string, string> = {
 interface PipelinePart {
   type: string;
   data?: any;
-}
-
-function ToolCard({ name, input, output, isResult }: {
-  name: string;
-  input: Record<string, any>;
-  output?: any;
-  isResult: boolean;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const Icon = TOOL_ICONS[name] || Wrench;
-
-  return (
-    <div className="ml-4">
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-2 text-left group py-1"
-      >
-        {isExpanded ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-        )}
-        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
-        <span className="text-sm text-muted-foreground flex-1">
-          {name.replace(/_/g, " ")}
-        </span>
-        {isResult ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-        ) : (
-          <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-        )}
-      </button>
-
-      {isExpanded && (input || output) && (
-        <div className="mt-1 ml-6 space-y-2 text-sm">
-          {input && Object.keys(input).length > 0 && (
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Input</div>
-              <pre className="text-xs bg-muted/30 p-2 rounded font-mono overflow-x-auto max-h-40 overflow-y-auto">
-                {JSON.stringify(input, null, 2)}
-              </pre>
-            </div>
-          )}
-          {output && (
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Output</div>
-              <pre className="text-xs bg-muted/30 p-2 rounded font-mono overflow-x-auto max-h-40 overflow-y-auto">
-                {typeof output === "string" ? output : JSON.stringify(output, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function ReasoningBlock({ content, node }: { content: string; node?: string }) {
@@ -146,6 +75,57 @@ function NodeStartBlock({ title, node }: { title: string; node: string }) {
   );
 }
 
+/**
+ * Build an ordered list of display items from streaming parts,
+ * preserving the original streaming order. tool_call and tool_result
+ * for the same tool name are merged into a single entry (in the
+ * position of the first tool_call).
+ */
+type DisplayItem =
+  | { kind: "node"; title: string; node: string }
+  | { kind: "reasoning"; content: string; node?: string }
+  | {
+      kind: "tool";
+      name: string;
+      input: Record<string, any>;
+      output?: any;
+      isError?: boolean;
+      hasResult: boolean;
+    };
+
+function buildOrderedItems(parts: PipelinePart[]): DisplayItem[] {
+  const items: DisplayItem[] = [];
+  const toolIndexMap = new Map<string, number>(); // tool name -> index in items[]
+
+  for (const part of parts) {
+    if (part.type === "data-node-start" && part.data) {
+      items.push({ kind: "node", title: part.data.title, node: part.data.node });
+    } else if (part.type === "data-reasoning" && part.data) {
+      items.push({ kind: "reasoning", content: part.data.content, node: part.data.node });
+    } else if (part.type === "data-tool-call" && part.data) {
+      const { name, input } = part.data;
+      if (!toolIndexMap.has(name)) {
+        toolIndexMap.set(name, items.length);
+        items.push({ kind: "tool", name, input: input || {}, hasResult: false });
+      }
+    } else if (part.type === "data-tool-result" && part.data) {
+      const { name, input, output, isError } = part.data;
+      const idx = toolIndexMap.get(name);
+      if (idx !== undefined) {
+        const existing = items[idx] as Extract<DisplayItem, { kind: "tool" }>;
+        existing.output = output;
+        existing.isError = isError;
+        existing.hasResult = true;
+      } else {
+        toolIndexMap.set(name, items.length);
+        items.push({ kind: "tool", name, input: input || {}, output, isError, hasResult: true });
+      }
+    }
+  }
+
+  return items;
+}
+
 export function PipelineDisplay({
   parts,
   isLoading,
@@ -157,12 +137,9 @@ export function PipelineDisplay({
 
   if (parts.length === 0) return null;
 
-  // Count tools for the summary label
-  const toolParts = parts.filter(
-    (p) => p.type === "data-tool-call" || p.type === "data-tool-result"
-  );
-  const uniqueTools = new Set(toolParts.map((p) => p.data?.name)).size;
-  const nodeParts = parts.filter((p) => p.type === "data-node-start");
+  const items = buildOrderedItems(parts);
+  const toolCount = items.filter((i) => i.kind === "tool").length;
+  const nodeCount = items.filter((i) => i.kind === "node").length;
 
   return (
     <div className="border border-border/50 rounded-lg overflow-hidden mb-2">
@@ -178,8 +155,8 @@ export function PipelineDisplay({
         <Wrench className="w-4 h-4 text-muted-foreground" />
         <span className="text-sm text-muted-foreground">
           Analysis Pipeline
-          {uniqueTools > 0 && ` \u2022 ${uniqueTools} tool${uniqueTools > 1 ? "s" : ""}`}
-          {nodeParts.length > 0 && ` \u2022 ${nodeParts.length} step${nodeParts.length > 1 ? "s" : ""}`}
+          {toolCount > 0 && ` \u2022 ${toolCount} tool${toolCount > 1 ? "s" : ""}`}
+          {nodeCount > 0 && ` \u2022 ${nodeCount} step${nodeCount > 1 ? "s" : ""}`}
         </span>
         {isLoading && (
           <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin ml-auto" />
@@ -190,50 +167,51 @@ export function PipelineDisplay({
       </button>
 
       {isOpen && (
-        <div className="px-3 py-2 space-y-0.5">
-          {parts.map((part, index) => {
-            const key = `pipeline-${index}`;
-
-            if (part.type === "data-node-start" && part.data) {
+        <div className="px-3 py-2 space-y-1">
+          {items.map((item, index) => {
+            if (item.kind === "node") {
               return (
                 <NodeStartBlock
-                  key={key}
-                  title={part.data.title}
-                  node={part.data.node}
+                  key={`item-${index}`}
+                  title={item.title}
+                  node={item.node}
                 />
               );
             }
 
-            if (part.type === "data-tool-call" && part.data) {
-              return (
-                <ToolCard
-                  key={key}
-                  name={part.data.name}
-                  input={part.data.input || {}}
-                  isResult={false}
-                />
-              );
-            }
-
-            if (part.type === "data-tool-result" && part.data) {
-              return (
-                <ToolCard
-                  key={key}
-                  name={part.data.name}
-                  input={part.data.input || {}}
-                  output={part.data.output}
-                  isResult={true}
-                />
-              );
-            }
-
-            if (part.type === "data-reasoning" && part.data) {
+            if (item.kind === "reasoning") {
               return (
                 <ReasoningBlock
-                  key={key}
-                  content={part.data.content}
-                  node={part.data.node}
+                  key={`item-${index}`}
+                  content={item.content}
+                  node={item.node}
                 />
+              );
+            }
+
+            if (item.kind === "tool") {
+              return (
+                <Tool defaultOpen={false} key={`item-${index}`}>
+                  <ToolHeader
+                    state={item.hasResult ? (item.isError ? "output-error" : "output-available") : "input-available"}
+                    type={`tool-${item.name}` as any}
+                  />
+                  <ToolContent>
+                    <ToolInput input={item.input} />
+                    {item.hasResult && (
+                      <ToolOutput
+                        errorText={item.isError ? "Tool execution failed" : undefined}
+                        output={
+                          <pre className="whitespace-pre-wrap p-3 text-xs font-mono">
+                            {typeof item.output === "string"
+                              ? item.output
+                              : JSON.stringify(item.output, null, 2)}
+                          </pre>
+                        }
+                      />
+                    )}
+                  </ToolContent>
+                </Tool>
               );
             }
 

@@ -41,7 +41,13 @@ export function PureMessageActions({
       return;
     }
 
-    await copyToClipboard(textFromParts);
+    // Strip base64 image data from markdown before copying
+    const cleaned = textFromParts.replace(
+      /!\[([^\]]*)\]\(data:image\/[^;]+;base64,[A-Za-z0-9+/=\s]+\)/g,
+      "![$1](image)"
+    );
+
+    await copyToClipboard(cleaned);
     toast.success("Copied to clipboard!");
   };
 
