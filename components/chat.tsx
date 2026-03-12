@@ -29,7 +29,6 @@ import { SuggestedActions } from "./suggested-actions";
 import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { VisibilityType } from "./visibility-selector";
-import { ProcessViewer } from "./process-viewer";
 import { useStructuredChat } from "@/hooks/use-structured-chat";
 import { useMessageAdapter } from "@/hooks/use-message-adapter";
 import { ApplicantProfilePanel, type ApplicantProfileType } from "./applicant-profile-panel";
@@ -96,6 +95,7 @@ export function Chat({
     collapsibleSections,
     timeline: liveTimeline,
     isStreaming,
+    isSubmitted,
     stop,
   } = useStructuredChat();
 
@@ -121,30 +121,14 @@ export function Chat({
 
       if (!text.trim()) return;
 
-      // Inject applicant profile context if one is selected
+      // Pass selected profile ID as a separate field (not injected into prompt)
       const profile = selectedProfileRef.current;
-      let finalText = text;
-      if (profile) {
-        if (profile.id !== "custom") {
-          // Sample applicant — prepend context so backend knows which to load
-          if (!text.toLowerCase().includes("applicant") || !text.match(/#?\d{5,}/)) {
-            finalText = `[Selected Profile: Applicant #${profile.id}] ${text}`;
-          }
-        } else if (profile.fields.length > 0) {
-          // Custom applicant — append field data from DisplayField[]
-          const fieldStr = profile.fields
-            .filter((f) => f.value != null && f.value !== "")
-            .map((f) => `${f.label}: ${f.value}`)
-            .join(", ");
-          if (fieldStr) {
-            finalText = `${text}\n\n[Applicant Profile: ${fieldStr}]`;
-          }
-        }
-      }
+      const profileId = profile?.id !== "custom" ? profile?.id : undefined;
 
-      sendStructuredMessage(finalText, {
+      sendStructuredMessage(text, {
         id,
         model: currentModelIdRef.current,
+        selectedProfileId: profileId || null,
       });
     },
     [sendStructuredMessage, id]
@@ -167,8 +151,8 @@ export function Chat({
     console.warn("setMessages: Not implemented with useStructuredChat");
   }, []);
 
-  // Map isStreaming to status for compatibility
-  const status = isStreaming ? "streaming" : "ready";
+  // Map isStreaming/isSubmitted to status for compatibility
+  const status = isSubmitted ? "submitted" : isStreaming ? "streaming" : "ready";
 
   // Handle onFinish equivalent - update chat history when streaming stops
   useEffect(() => {

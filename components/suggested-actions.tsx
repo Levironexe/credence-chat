@@ -34,9 +34,9 @@ function PureSuggestedActions({ chatId, sendMessage, selectedProfile }: Suggeste
         `Explain how the credit scoring model works`,
       ];
     }
-    // No profile selected — show general actions with hint to select one
+    // No profile selected — show general actions
     return [
-      "Assess applicant #270000",
+      "Assess a loan application",
       "What factors most affect credit approval?",
       "Explain how the credit scoring model works",
       "How does the fairness validation work?",

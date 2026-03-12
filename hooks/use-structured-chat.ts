@@ -28,9 +28,12 @@ export function useStructuredChat() {
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const sseHandlerRef = useRef<SSEEventHandler | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentMessageRef = useRef<string>("");
+  const messagesRef = useRef<Message[]>(messages);
+  messagesRef.current = messages;
 
   // Initialize SSE handler
   if (!sseHandlerRef.current) {
@@ -66,30 +69,25 @@ export function useStructuredChat() {
   const handleEvent = useCallback((event: StructuredEvent) => {
     console.log("[SSE Event]", event.type, event);
 
+    // Transition from submitted → streaming on first event
+    setIsSubmitted(false);
+    setIsStreaming(true);
+
+    // Ensure assistant message exists for all event types
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (!last || last.role !== "assistant") {
+        return [...prev, { id: Date.now().toString(), role: "assistant", content: "", parts: [] }];
+      }
+      return prev;
+    });
+
     switch (event.type) {
       case "text":
-        // Ensure assistant message exists before passing to handler
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (!last || last.role !== "assistant") {
-            return [...prev, { id: Date.now().toString(), role: "assistant", content: "", parts: [] }];
-          }
-          return prev;
-        });
-        // Pass to SSE handler - it will update via onUpdate callback
         sseHandlerRef.current?.handleChunk(event as any);
         break;
 
       case "text-delta":
-        // Ensure assistant message exists
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (!last || last.role !== "assistant") {
-            return [...prev, { id: event.id || Date.now().toString(), role: "assistant", content: "", parts: [] }];
-          }
-          return prev;
-        });
-        // Pass to SSE handler as text event
         sseHandlerRef.current?.handleChunk({ ...event, type: "text", content: event.delta || "" } as any);
         break;
 
@@ -98,7 +96,6 @@ export function useStructuredChat() {
       case "reasoning":
       case "skip":
       case "tool_result":
-        // All structured events - pass to SSE handler
         sseHandlerRef.current?.handleChunk(event as any);
         break;
     }
@@ -112,12 +109,29 @@ export function useStructuredChat() {
         role: "user",
         content: text,
       };
+
+      // Build conversation history: all previous user+assistant messages + new message
+      // This gives the LLM context from prior turns (AI SDK standard pattern)
+      const historyMessages: Array<{ role: string; parts: Array<{ type: string; text: string }> }> = [];
+      const currentMessages = [...messagesRef.current]; // snapshot before adding new msg
+      for (const msg of currentMessages) {
+        if (msg.role === "user" || msg.role === "assistant") {
+          historyMessages.push({
+            role: msg.role,
+            parts: [{ type: "text", text: msg.content }],
+          });
+        }
+      }
+      // Add the new user message
+      historyMessages.push({ role: "user", parts: [{ type: "text", text }] });
+
       setMessages((prev) => [...prev, userMsg]);
 
-      // Reset for new response
+      // Reset for new response — enter "submitted" state until first SSE event
       currentMessageRef.current = "";
       sseHandlerRef.current?.reset();
-      setIsStreaming(true);
+      setIsSubmitted(true);
+      setIsStreaming(false);
 
       // Create abort controller
       abortControllerRef.current = new AbortController();
@@ -128,9 +142,10 @@ export function useStructuredChat() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             id: options?.id || Date.now().toString(),
-            messages: [{ role: "user", parts: [{ type: "text", text }] }],
+            messages: historyMessages,
             selectedChatModel: options?.model || "agent/loan-analyst",
             selectedVisibilityType: "private",
+            selectedProfileId: options?.selectedProfileId || null,
           }),
           signal: abortControllerRef.current.signal,
         });
@@ -185,6 +200,7 @@ export function useStructuredChat() {
         }
       } finally {
         setIsStreaming(false);
+        setIsSubmitted(false);
       }
     },
     [handleEvent]
@@ -193,6 +209,7 @@ export function useStructuredChat() {
   const stop = useCallback(async () => {
     abortControllerRef.current?.abort();
     setIsStreaming(false);
+    setIsSubmitted(false);
   }, []);
 
   return {
@@ -202,6 +219,7 @@ export function useStructuredChat() {
     collapsibleSections,
     timeline,
     isStreaming,
+    isSubmitted,
     stop,
   };
 }
