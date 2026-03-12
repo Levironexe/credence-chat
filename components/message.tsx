@@ -29,6 +29,7 @@ import {
   hasAgentWorkflow,
 } from "@/lib/parse-agent-stream";
 import { TimelineRenderer } from "./timeline-renderer";
+import { PipelineDisplay } from "./pipeline-display";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -70,10 +71,16 @@ const PurePreviewMessage = ({
 
   useDataStream();
 
-  // Hide the assistant message entirely while it has no visible content
-  // (only pipeline events, no text). ThinkingMessage handles this state.
+  // Hide the assistant message entirely while it has no visible content.
+  // Pipeline events (node-start, tool-call, etc.) count as visible content.
   const hasVisibleContent = message.role !== "assistant" || message.parts?.some(
-    (p) => (p.type === "text" && (p as any).text?.trim()) || p.type === "reasoning"
+    (p) =>
+      (p.type === "text" && (p as any).text?.trim()) ||
+      p.type === "reasoning" ||
+      p.type === "data-node-start" ||
+      p.type === "data-tool-call" ||
+      p.type === "data-tool-result" ||
+      p.type === "data-reasoning"
   );
 
   if (!hasVisibleContent && isLoading) {
@@ -108,7 +115,8 @@ const PurePreviewMessage = ({
                 (message.parts?.some(
                   (p) => p.type === "text" && p.text?.trim()
                 ) ||
-                  message.parts?.some((p) => p.type.startsWith("tool-")))) ||
+                  message.parts?.some((p) => p.type.startsWith("tool-")) ||
+                  message.parts?.some((p) => p.type.startsWith("data-")))) ||
               mode === "edit",
             "max-w-[calc(100%-2.5rem)] sm:max-w-[min(fit-content,80%)]":
               message.role === "user" && mode !== "edit",
@@ -132,9 +140,39 @@ const PurePreviewMessage = ({
             </div>
           )}
 
+          {/* Pipeline events: stacked display in collapsible wrapper */}
+          {message.role === "assistant" && (() => {
+            const pipelineParts = (message.parts || []).filter(
+              (p) =>
+                p.type === "data-node-start" ||
+                p.type === "data-tool-call" ||
+                p.type === "data-tool-result" ||
+                p.type === "data-reasoning"
+            );
+            if (pipelineParts.length > 0) {
+              return (
+                <PipelineDisplay
+                  parts={pipelineParts}
+                  isLoading={isLoading}
+                />
+              );
+            }
+            return null;
+          })()}
+
           {message.parts?.map((part, index) => {
             const { type } = part;
             const key = `message-${message.id}-part-${index}`;
+
+            // Pipeline parts rendered above in PipelineDisplay
+            if (
+              type === "data-node-start" ||
+              type === "data-tool-call" ||
+              type === "data-tool-result" ||
+              type === "data-reasoning"
+            ) {
+              return null;
+            }
 
             if (type === "reasoning") {
               const hasContent = part.text?.trim().length > 0;
@@ -386,17 +424,6 @@ const PurePreviewMessage = ({
               );
             }
 
-            // Pipeline progress parts (node-start, tool-call, tool-result, reasoning)
-            // are rendered by AgentProgress as a compact single-line indicator below
-            if (
-              type === "data-node-start" ||
-              type === "data-tool-call" ||
-              type === "data-tool-result" ||
-              type === "data-reasoning"
-            ) {
-              return null;
-            }
-
             return null;
           })}
 
@@ -482,6 +509,21 @@ export function hasTextContent(messages: ChatMessage[]): boolean {
   const lastMsg = messages[messages.length - 1];
   if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return false;
   return lastMsg.parts.some((p) => p.type === "text" && (p as any).text?.trim());
+}
+
+/**
+ * Check if the last assistant message has any pipeline events (visible in PipelineDisplay).
+ */
+export function hasPipelineContent(messages: ChatMessage[]): boolean {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return false;
+  return lastMsg.parts.some(
+    (p) =>
+      p.type === "data-node-start" ||
+      p.type === "data-tool-call" ||
+      p.type === "data-tool-result" ||
+      p.type === "data-reasoning"
+  );
 }
 
 export const ThinkingMessage = ({ selectedModelId, label }: { selectedModelId: string; label?: string }) => {
