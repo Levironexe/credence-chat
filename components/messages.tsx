@@ -5,7 +5,7 @@ import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { useDataStream } from "./data-stream-provider";
 import { Greeting } from "./greeting";
-import { PreviewMessage, ThinkingMessage } from "./message";
+import { PreviewMessage, ThinkingMessage, getLoadingLabel, hasTextContent } from "./message";
 
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -76,12 +76,14 @@ function PureMessages({
             />
           ))}
 
-          {status === "submitted" &&
-            !messages.some((msg) =>
-              msg.parts?.some(
-                (part) => "state" in part && part.state === "approval-responded"
-              )
-            ) && <ThinkingMessage selectedModelId={_selectedModelId} />}
+          {/* Show loading state: during "submitted" (waiting) and "streaming" (tools running, no text yet) */}
+          {(status === "submitted" ||
+            (status === "streaming" && !hasTextContent(messages))) && (
+            <ThinkingMessage
+              selectedModelId={_selectedModelId}
+              label={status === "streaming" ? getLoadingLabel(messages) : "Analyzing"}
+            />
+          )}
 
           <div
             className="min-h-[24px] min-w-[24px] shrink-0"

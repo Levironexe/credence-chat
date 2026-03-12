@@ -70,6 +70,16 @@ const PurePreviewMessage = ({
 
   useDataStream();
 
+  // Hide the assistant message entirely while it has no visible content
+  // (only pipeline events, no text). ThinkingMessage handles this state.
+  const hasVisibleContent = message.role !== "assistant" || message.parts?.some(
+    (p) => (p.type === "text" && (p as any).text?.trim()) || p.type === "reasoning"
+  );
+
+  if (!hasVisibleContent && isLoading) {
+    return null;
+  }
+
   return (
     <div
       className="group/message fade-in w-full animate-in duration-200"
@@ -376,75 +386,15 @@ const PurePreviewMessage = ({
               );
             }
 
-            // New unified part types from SSE handler
-            if (type === "data-tool-call" && "data" in part) {
-              const toolData = part.data as { name: string; input: Record<string, any> };
-              return (
-                <Tool defaultOpen={false} key={key}>
-                  <ToolHeader state="input-available" type={`tool-${toolData.name}`} />
-                  <ToolContent>
-                    <ToolInput input={toolData.input} />
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
-            if (type === "data-tool-result" && "data" in part) {
-              const toolData = part.data as { name: string; input: Record<string, any>; output: any; isError?: boolean };
-
-              // Parse output if it's a string (from old timeline conversion)
-              let parsedOutput = toolData.output;
-              if (typeof toolData.output === 'string') {
-                try {
-                  parsedOutput = JSON.parse(toolData.output);
-                } catch {
-                  // Keep as string if parsing fails
-                  parsedOutput = toolData.output;
-                }
-              }
-
-              return (
-                <Tool defaultOpen={false} key={key}>
-                  <ToolHeader
-                    state={toolData.isError ? "output-denied" : "output-available"}
-                    type={`tool-${toolData.name}`}
-                  />
-                  <ToolContent>
-                    <ToolInput input={toolData.input} />
-                    <ToolOutput
-                      errorText={toolData.isError ? "Tool execution failed" : undefined}
-                      output={
-                        <div className="text-sm">
-                          <pre className="whitespace-pre-wrap font-mono text-xs">{JSON.stringify(parsedOutput, null, 2)}</pre>
-                        </div>
-                      }
-                    />
-                  </ToolContent>
-                </Tool>
-              );
-            }
-
-            if (type === "data-node-start" && "data" in part) {
-              const nodeData = part.data as { title: string; node: string };
-              return (
-                <div key={key} className="text-sm text-muted-foreground py-1">
-                  <span className="font-medium">▸ {nodeData.title}</span>
-                </div>
-              );
-            }
-
-            if (type === "data-reasoning" && "data" in part) {
-              const reasoningData = part.data as { content: string; node?: string };
-              const hasContent = reasoningData.content?.trim().length > 0;
-              if (hasContent) {
-                return (
-                  <MessageReasoning
-                    isLoading={isLoading}
-                    key={key}
-                    reasoning={reasoningData.content}
-                  />
-                );
-              }
+            // Pipeline progress parts (node-start, tool-call, tool-result, reasoning)
+            // are rendered by AgentProgress as a compact single-line indicator below
+            if (
+              type === "data-node-start" ||
+              type === "data-tool-call" ||
+              type === "data-tool-result" ||
+              type === "data-reasoning"
+            ) {
+              return null;
             }
 
             return null;
@@ -481,10 +431,63 @@ const PurePreviewMessage = ({
 
 export const PreviewMessage = PurePreviewMessage;
 
-export const ThinkingMessage = ({ selectedModelId }: { selectedModelId: string }) => {
-  // Extract provider from selectedModelId
+// Map tool/node names to user-friendly loading labels
+const LOADING_LABELS: Record<string, string> = {
+  applicant_lookup: "Loading applicant data",
+  credit_score_model: "Computing credit score",
+  shap_explainer: "Analyzing score factors",
+  fairness_validator: "Validating fairness",
+  counterfactual_generator: "Generating improvement paths",
+  pdf_extractor: "Extracting PDF",
+  bank_statement_parser: "Parsing bank statement",
+  // Node names as fallback
+  classify: "Classifying query",
+  data_completeness: "Checking data",
+  planning: "Planning analysis",
+  credit_scoring: "Computing credit score",
+  explainability: "Analyzing score factors",
+  fairness_check: "Validating fairness",
+  counterfactual_generation: "Generating improvement paths",
+  response: "Generating report",
+};
+
+/**
+ * Extract the current loading label from the last assistant message parts.
+ * Looks at the most recent tool_call or node_start event.
+ */
+export function getLoadingLabel(messages: ChatMessage[]): string {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return "Analyzing";
+
+  // Walk parts backwards to find the most recent tool or node event
+  for (let i = lastMsg.parts.length - 1; i >= 0; i--) {
+    const part = lastMsg.parts[i];
+    if (part.type === "data-tool-call" && part.data) {
+      const name = (part.data as any).name;
+      return LOADING_LABELS[name] || "Processing";
+    }
+    if (part.type === "data-node-start" && part.data) {
+      const node = (part.data as any).node;
+      return LOADING_LABELS[node] || "Processing";
+    }
+  }
+
+  return "Analyzing";
+}
+
+/**
+ * Check if the last assistant message has started streaming text content.
+ */
+export function hasTextContent(messages: ChatMessage[]): boolean {
+  const lastMsg = messages[messages.length - 1];
+  if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) return false;
+  return lastMsg.parts.some((p) => p.type === "text" && (p as any).text?.trim());
+}
+
+export const ThinkingMessage = ({ selectedModelId, label }: { selectedModelId: string; label?: string }) => {
   const selectedModel = chatModels.find((model) => model.id === selectedModelId);
   const provider = selectedModel?.provider.toLowerCase() || "anthropic";
+  const displayLabel = label || "Analyzing";
 
   return (
     <div
@@ -500,13 +503,13 @@ export const ThinkingMessage = ({ selectedModelId }: { selectedModelId: string }
         </div>
 
         <div className="flex w-full flex-col gap-2 md:gap-4">
-          <div className="flex items-center gap-1 p-0 text-muted-foreground text-[15px]">
-            <span className="animate-pulse">Thinking</span>
-            {/* <span className="inline-flex">
+          <div className="flex items-center gap-1.5 p-0 text-muted-foreground text-[15px]">
+            <span className="animate-pulse">{displayLabel}</span>
+            <span className="inline-flex">
               <span className="animate-bounce [animation-delay:0ms]">.</span>
               <span className="animate-bounce [animation-delay:150ms]">.</span>
               <span className="animate-bounce [animation-delay:300ms]">.</span>
-            </span> */}
+            </span>
           </div>
         </div>
       </div>
