@@ -301,7 +301,7 @@ export class SSEEventHandler {
    */
   getState() {
     return {
-      parts: this.parts,
+      parts: [...this.parts],
       // Deprecated: kept for backwards compatibility
       collapsibleSections: this.collapsibleSections,
       mainResponse: this.mainResponse,
