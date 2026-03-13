@@ -28,7 +28,9 @@ export function useMessageAdapter(
       return initialMessages;
     }
 
-    return rawMessages.map((msg, index) => {
+    // Convert rawMessages (current session) and prepend initialMessages (from DB)
+    // so previous conversation history remains visible when user sends follow-ups
+    const convertedRaw = rawMessages.map((msg, index) => {
       // Attach live timeline to the last assistant message during streaming
       const isLastMessage = index === rawMessages.length - 1;
       const shouldAttachTimeline = isLastMessage && msg.role === "assistant" && liveTimeline && liveTimeline.length > 0;
@@ -88,6 +90,9 @@ export function useMessageAdapter(
         },
       };
     });
+
+    // Prepend DB messages so previous conversation history stays visible
+    return [...initialMessages, ...convertedRaw];
   }, [rawMessages, currentProvider, liveTimeline, initialMessages]);
 
   return messages;

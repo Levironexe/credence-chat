@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { ChatHeader } from "@/components/chat-header";
@@ -88,6 +88,18 @@ export function Chat({
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
 
+  // Build initial history from DB messages for LLM context in follow-ups
+  const initialHistory = useMemo(() => {
+    if (!initialMessages || initialMessages.length === 0) return undefined;
+    return initialMessages.map((msg) => {
+      const textPart = msg.parts?.find((p: any) => p.type === "text");
+      return {
+        role: msg.role,
+        content: (textPart as { text?: string })?.text || "",
+      };
+    }).filter((m) => m.content);
+  }, [initialMessages]);
+
   // Use structured chat for real-time SSE events
   const {
     messages: rawMessages,
@@ -98,7 +110,7 @@ export function Chat({
     isStreaming,
     isSubmitted,
     stop,
-  } = useStructuredChat();
+  } = useStructuredChat(initialHistory);
 
   // Convert simple messages to ChatMessage format
   // Pass liveTimeline to attach to streaming message
