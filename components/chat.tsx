@@ -77,6 +77,7 @@ export function Chat({
   const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<ApplicantProfileType | null>(null);
   const selectedProfileRef = useRef<ApplicantProfileType | null>(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     selectedProfileRef.current = selectedProfile;
@@ -154,10 +155,11 @@ export function Chat({
   // Map isStreaming/isSubmitted to status for compatibility
   const status = isSubmitted ? "submitted" : isStreaming ? "streaming" : "ready";
 
-  // Handle onFinish equivalent - update chat history when streaming stops
+  // Handle onFinish equivalent - update chat history and refresh sidebar scores
   useEffect(() => {
     if (!isStreaming && rawMessages.length > 0) {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
+      setProfileRefreshKey((k) => k + 1);
     }
   }, [isStreaming, rawMessages.length, mutate]);
 
@@ -303,6 +305,7 @@ export function Chat({
         onToggle={() => setIsProfilePanelOpen((prev) => !prev)}
         selectedProfile={selectedProfile}
         onProfileChange={setSelectedProfile}
+        refreshKey={profileRefreshKey}
       />
 
       <AlertDialog
