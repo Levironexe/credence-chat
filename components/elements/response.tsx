@@ -32,9 +32,15 @@ const COLOR_RULES: ColorRule[] = [
   { pattern: /\bPASSED\b/, className: "text-emerald-500 font-semibold" },
   { pattern: /\bFAILED\b/, className: "text-red-400 font-semibold" },
 
-  // SHAP Direction
+  // Risk direction
   { pattern: /Increases risk/i, className: "text-red-400" },
   { pattern: /Decreases risk/i, className: "text-emerald-500" },
+  { pattern: /Reduces risk/i, className: "text-emerald-500" },
+
+  // Influence level (replaces raw SHAP values)
+  { pattern: /^Strong$/i, className: "text-amber-400 font-semibold" },
+  { pattern: /^Moderate$/i, className: "text-blue-400 font-medium" },
+  { pattern: /^Minor$/i, className: "text-zinc-400" },
 ];
 
 // Score band colors (matched in credit score cell)
@@ -240,7 +246,7 @@ function allowDataImageUrls(url: string): string {
 // Regex to match: ![SHAP Waterfall Plot](url) followed by SHAP table
 // The image and table may be separated by blank lines and optional text
 const SHAP_IMAGE_REGEX = /!\[SHAP Waterfall Plot\]\(([^)]+)\)/;
-const SHAP_TABLE_HEADER_REGEX = /\|\s*#\s*\|\s*Factor\s*\|\s*SHAP Impact\s*\|\s*Value\s*\|\s*Direction\s*\|/;
+const SHAP_TABLE_HEADER_REGEX = /\|\s*#\s*\|\s*Factor\s*\|\s*(?:SHAP Impact|Influence)\s*\|\s*Value\s*\|\s*(?:Direction|Impact)\s*\|/;
 
 interface ShapSection {
   imageUrl: string;

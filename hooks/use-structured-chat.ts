@@ -23,7 +23,7 @@ interface Message {
   parts?: any[]; // Parts array from SSE handler
 }
 
-export function useStructuredChat() {
+export function useStructuredChat(initialHistory?: Array<{ role: string; content: string }>) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [collapsibleSections, setCollapsibleSections] = useState<CollapsibleSection[]>([]);
   const [timeline, setTimeline] = useState<TimelineEvent[]>([]);
@@ -34,6 +34,8 @@ export function useStructuredChat() {
   const currentMessageRef = useRef<string>("");
   const messagesRef = useRef<Message[]>(messages);
   messagesRef.current = messages;
+  const initialHistoryRef = useRef(initialHistory);
+  initialHistoryRef.current = initialHistory;
 
   // Initialize SSE handler
   if (!sseHandlerRef.current) {
@@ -110,10 +112,21 @@ export function useStructuredChat() {
         content: text,
       };
 
-      // Build conversation history: all previous user+assistant messages + new message
-      // This gives the LLM context from prior turns (AI SDK standard pattern)
+      // Build conversation history: initial history (from DB) + session messages + new message
       const historyMessages: Array<{ role: string; parts: Array<{ type: string; text: string }> }> = [];
-      const currentMessages = [...messagesRef.current]; // snapshot before adding new msg
+
+      // Include initial history from DB (previous conversations loaded on page)
+      if (initialHistoryRef.current) {
+        for (const msg of initialHistoryRef.current) {
+          historyMessages.push({
+            role: msg.role,
+            parts: [{ type: "text", text: msg.content }],
+          });
+        }
+      }
+
+      // Add current session messages
+      const currentMessages = [...messagesRef.current];
       for (const msg of currentMessages) {
         if (msg.role === "user" || msg.role === "assistant") {
           historyMessages.push({

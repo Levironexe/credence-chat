@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import useSWR from "swr";
 import {
   ChevronRight,
   ChevronLeft,
@@ -12,10 +13,10 @@ import {
   ShieldCheck,
   ShieldAlert,
   ShieldQuestion,
+  Calculator,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getBackendUrl } from "@/lib/api/client";
+
+// SWR fetcher for applicant samples
+const samplesFetcher = (url: string) =>
+  fetch(url, { credentials: "include" })
+    .then((res) => res.json())
+    .then((data) => (data.success && data.applicants ? data.applicants : []));
 
 // Types matching backend response
 interface DisplayField {
@@ -52,6 +59,7 @@ interface ApplicantProfilePanelProps {
   onToggle: () => void;
   selectedProfile: ApplicantProfile | null;
   onProfileChange: (profile: ApplicantProfile) => void;
+  refreshKey?: number;
 }
 
 const SCORE_COLORS: Record<string, string> = {
@@ -90,28 +98,37 @@ function PureApplicantProfilePanel({
   onToggle,
   selectedProfile,
   onProfileChange,
+  refreshKey,
 }: ApplicantProfilePanelProps) {
-  const [samples, setSamples] = useState<ApplicantProfile[]>([]);
-  const [isLoadingSamples, setIsLoadingSamples] = useState(false);
+  // SWR: globally cached applicant samples — persists across navigations/remounts
+  const { data: samples = [], isLoading: isLoadingSamples, mutate: mutateSamples } = useSWR<ApplicantProfile[]>(
+    getBackendUrl("/api/applicants/samples"),
+    samplesFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 60s dedup — won't refetch within 60s
+    }
+  );
+
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
   const [editingFields, setEditingFields] = useState<Record<string, string>>({});
   const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch sample applicants on first open
+  // Refresh samples when refreshKey changes (e.g. after chat analysis saves a score)
   useEffect(() => {
-    if (isOpen && samples.length === 0 && !isLoadingSamples) {
-      setIsLoadingSamples(true);
-      fetch(getBackendUrl("/api/applicants/samples"), { credentials: "include" })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.applicants) {
-            setSamples(data.applicants);
+    if (refreshKey && refreshKey > 0) {
+      mutateSamples().then((updated) => {
+        if (updated && selectedProfile && selectedProfile.id !== "custom") {
+          const match = updated.find((a) => a.id === selectedProfile.id);
+          if (match && match.score && match.score !== selectedProfile.score) {
+            onProfileChange({ ...selectedProfile, score: match.score, score_band: match.score_band, default_probability: match.default_probability });
           }
-        })
-        .catch((err) => console.error("Failed to load samples:", err))
-        .finally(() => setIsLoadingSamples(false));
+        }
+      });
     }
-  }, [isOpen, samples.length, isLoadingSamples]);
+  }, [refreshKey]);
 
   // Load full profile when selected
   const handleProfileSelect = useCallback(
@@ -154,7 +171,6 @@ function PureApplicantProfilePanel({
               score: data.score,
               score_band: data.score_band,
               default_probability: data.default_probability,
-              actual_default: data.actual_default,
             };
             onProfileChange(profile);
           }
@@ -166,12 +182,54 @@ function PureApplicantProfilePanel({
     [onProfileChange, samples]
   );
 
+  // Score the selected applicant
+  const handleScore = useCallback(async () => {
+    if (!selectedProfile || selectedProfile.id === "custom") return;
+
+    setIsScoring(true);
+    try {
+      const res = await fetch(
+        getBackendUrl(`/api/applicants/${selectedProfile.id}/score`),
+        { method: "POST", credentials: "include" }
+      );
+      const data = await res.json();
+      if (data.success) {
+        // Update selected profile with score
+        const updated: ApplicantProfile = {
+          ...selectedProfile,
+          score: data.credit_score,
+          score_band: data.score_band,
+          default_probability: data.default_probability,
+        };
+        onProfileChange(updated);
+
+        // Also update in SWR cache
+        mutateSamples(
+          (prev) => prev?.map((s) =>
+            s.id === selectedProfile.id
+              ? { ...s, score: data.credit_score, score_band: data.score_band, default_probability: data.default_probability }
+              : s
+          ),
+          { revalidate: false }
+        );
+      }
+    } catch (err) {
+      console.error("Failed to score applicant:", err);
+    } finally {
+      setIsScoring(false);
+    }
+  }, [selectedProfile, onProfileChange]);
+
   const handleFieldEdit = useCallback((key: string, value: string) => {
     setEditingFields((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const handleSave = useCallback(() => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = useCallback(async () => {
     if (!selectedProfile) return;
+
+    // Build updated fields locally
     const updatedFields = selectedProfile.fields.map((f) => {
       if (f.key in editingFields) {
         const newVal = editingFields[f.key];
@@ -184,7 +242,58 @@ function PureApplicantProfilePanel({
       }
       return f;
     });
-    onProfileChange({ ...selectedProfile, fields: updatedFields });
+
+    // For DB applicants, persist to backend
+    if (selectedProfile.id !== "custom") {
+      setIsSaving(true);
+      try {
+        const fieldsPayload: Record<string, any> = {};
+        for (const [key, val] of Object.entries(editingFields)) {
+          fieldsPayload[key] = val === "" ? null : val;
+        }
+
+        const res = await fetch(
+          getBackendUrl(`/api/applicants/${selectedProfile.id}`),
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ fields: fieldsPayload }),
+          }
+        );
+        const data = await res.json();
+        if (data.success && data.fields) {
+          // Use server-returned fields (includes recomputed ratios)
+          const profile: ApplicantProfile = {
+            ...selectedProfile,
+            fields: data.fields,
+            score: null,
+            score_band: null,
+            default_probability: null,
+          };
+          onProfileChange(profile);
+          mutateSamples(
+            (prev) => prev?.map((s) =>
+              s.id === selectedProfile.id
+                ? { ...s, fields: data.fields, score: null, score_band: null, default_probability: null }
+                : s
+            ),
+            { revalidate: false }
+          );
+        } else {
+          // Fallback to local update
+          onProfileChange({ ...selectedProfile, fields: updatedFields });
+        }
+      } catch (err) {
+        console.error("Failed to save profile:", err);
+        onProfileChange({ ...selectedProfile, fields: updatedFields });
+      } finally {
+        setIsSaving(false);
+      }
+    } else {
+      onProfileChange({ ...selectedProfile, fields: updatedFields });
+    }
+
     setIsEditing(false);
     setEditingFields({});
   }, [selectedProfile, editingFields, onProfileChange]);
@@ -200,6 +309,7 @@ function PureApplicantProfilePanel({
   }, [selectedProfile]);
 
   const isCustom = selectedProfile?.id === "custom";
+  const hasScore = selectedProfile?.score != null;
 
   return (
     <>
@@ -274,20 +384,39 @@ function PureApplicantProfilePanel({
               </Select>
             </div>
 
-            {/* Score summary */}
-            {selectedProfile && selectedProfile.score != null && (
+            {/* Score summary — show if score exists */}
+            {selectedProfile && hasScore && (
               <div className="px-4 py-3 border-b border-border bg-muted/30">
                 <ScoreBadge score={selectedProfile.score} band={selectedProfile.score_band} />
                 <div className="flex gap-3 mt-1.5 text-xs text-muted-foreground">
                   {selectedProfile.default_probability != null && (
                     <span>Default prob: {(selectedProfile.default_probability * 100).toFixed(1)}%</span>
                   )}
-                  {selectedProfile.actual_default != null && (
-                    <span>
-                      Actual: {selectedProfile.actual_default === 1 ? "Defaulted" : "Repaid"}
-                    </span>
-                  )}
                 </div>
+              </div>
+            )}
+
+            {/* Score button — show if no score yet and not custom */}
+            {selectedProfile && !hasScore && !isCustom && (
+              <div className="px-4 py-3 border-b border-border">
+                <Button
+                  onClick={handleScore}
+                  disabled={isScoring}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  size="sm"
+                >
+                  {isScoring ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Scoring...
+                    </>
+                  ) : (
+                    <>
+                      <Calculator className="h-4 w-4 mr-2" />
+                      Score Profile
+                    </>
+                  )}
+                </Button>
               </div>
             )}
 
@@ -314,8 +443,12 @@ function PureApplicantProfilePanel({
                         {isCustom ? "Custom Fields" : "Applicant Details"}
                       </p>
                       {isEditing ? (
-                        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={handleSave}>
-                          <Save className="h-3 w-3 mr-1" /> Save
+                        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={handleSave} disabled={isSaving}>
+                          {isSaving ? (
+                            <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving</>
+                          ) : (
+                            <><Save className="h-3 w-3 mr-1" /> Save</>
+                          )}
                         </Button>
                       ) : (
                         <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={startEditing}>

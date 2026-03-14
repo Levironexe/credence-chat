@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useSWR, { useSWRConfig } from "swr";
 import { unstable_serialize } from "swr/infinite";
 import { ChatHeader } from "@/components/chat-header";
@@ -77,6 +77,7 @@ export function Chat({
   const [isProfilePanelOpen, setIsProfilePanelOpen] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<ApplicantProfileType | null>(null);
   const selectedProfileRef = useRef<ApplicantProfileType | null>(null);
+  const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   useEffect(() => {
     selectedProfileRef.current = selectedProfile;
@@ -86,6 +87,18 @@ export function Chat({
   useEffect(() => {
     currentModelIdRef.current = currentModelId;
   }, [currentModelId]);
+
+  // Build initial history from DB messages for LLM context in follow-ups
+  const initialHistory = useMemo(() => {
+    if (!initialMessages || initialMessages.length === 0) return undefined;
+    return initialMessages.map((msg) => {
+      const textPart = msg.parts?.find((p: any) => p.type === "text");
+      return {
+        role: msg.role,
+        content: (textPart as { text?: string })?.text || "",
+      };
+    }).filter((m) => m.content);
+  }, [initialMessages]);
 
   // Use structured chat for real-time SSE events
   const {
@@ -97,7 +110,7 @@ export function Chat({
     isStreaming,
     isSubmitted,
     stop,
-  } = useStructuredChat();
+  } = useStructuredChat(initialHistory);
 
   // Convert simple messages to ChatMessage format
   // Pass liveTimeline to attach to streaming message
@@ -154,10 +167,11 @@ export function Chat({
   // Map isStreaming/isSubmitted to status for compatibility
   const status = isSubmitted ? "submitted" : isStreaming ? "streaming" : "ready";
 
-  // Handle onFinish equivalent - update chat history when streaming stops
+  // Handle onFinish equivalent - update chat history and refresh sidebar scores
   useEffect(() => {
     if (!isStreaming && rawMessages.length > 0) {
       mutate(unstable_serialize(getChatHistoryPaginationKey));
+      setProfileRefreshKey((k) => k + 1);
     }
   }, [isStreaming, rawMessages.length, mutate]);
 
@@ -303,6 +317,7 @@ export function Chat({
         onToggle={() => setIsProfilePanelOpen((prev) => !prev)}
         selectedProfile={selectedProfile}
         onProfileChange={setSelectedProfile}
+        refreshKey={profileRefreshKey}
       />
 
       <AlertDialog
