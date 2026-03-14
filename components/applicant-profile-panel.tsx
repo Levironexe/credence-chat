@@ -1,7 +1,8 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import useSWR from "swr";
 import {
   ChevronRight,
   ChevronLeft,
@@ -26,6 +27,12 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getBackendUrl } from "@/lib/api/client";
+
+// SWR fetcher for applicant samples
+const samplesFetcher = (url: string) =>
+  fetch(url, { credentials: "include" })
+    .then((res) => res.json())
+    .then((data) => (data.success && data.applicants ? data.applicants : []));
 
 // Types matching backend response
 interface DisplayField {
@@ -93,51 +100,33 @@ function PureApplicantProfilePanel({
   onProfileChange,
   refreshKey,
 }: ApplicantProfilePanelProps) {
-  const [samples, setSamples] = useState<ApplicantProfile[]>([]);
-  const [isLoadingSamples, setIsLoadingSamples] = useState(false);
+  // SWR: globally cached applicant samples — persists across navigations/remounts
+  const { data: samples = [], isLoading: isLoadingSamples, mutate: mutateSamples } = useSWR<ApplicantProfile[]>(
+    getBackendUrl("/api/applicants/samples"),
+    samplesFetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000, // 60s dedup — won't refetch within 60s
+    }
+  );
+
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
   const [editingFields, setEditingFields] = useState<Record<string, string>>({});
   const [isEditing, setIsEditing] = useState(false);
-  const hasFetchedSamples = useRef(false);
-
-  // Fetch sample applicants on first open (once only)
-  useEffect(() => {
-    if (isOpen && !hasFetchedSamples.current && !isLoadingSamples) {
-      hasFetchedSamples.current = true;
-      setIsLoadingSamples(true);
-      fetch(getBackendUrl("/api/applicants/samples"), { credentials: "include" })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.applicants) {
-            setSamples(data.applicants);
-          }
-        })
-        .catch((err) => console.error("Failed to load samples:", err))
-        .finally(() => setIsLoadingSamples(false));
-    }
-  }, [isOpen]);
 
   // Refresh samples when refreshKey changes (e.g. after chat analysis saves a score)
   useEffect(() => {
     if (refreshKey && refreshKey > 0) {
-      fetch(getBackendUrl("/api/applicants/samples"), { credentials: "include" })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success && data.applicants) {
-            setSamples(data.applicants);
-            // Update selected profile score if it changed
-            if (selectedProfile && selectedProfile.id !== "custom") {
-              const updated = data.applicants.find(
-                (a: ApplicantProfile) => a.id === selectedProfile.id
-              );
-              if (updated && updated.score && updated.score !== selectedProfile.score) {
-                onProfileChange({ ...selectedProfile, score: updated.score, score_band: updated.score_band, default_probability: updated.default_probability });
-              }
-            }
+      mutateSamples().then((updated) => {
+        if (updated && selectedProfile && selectedProfile.id !== "custom") {
+          const match = updated.find((a) => a.id === selectedProfile.id);
+          if (match && match.score && match.score !== selectedProfile.score) {
+            onProfileChange({ ...selectedProfile, score: match.score, score_band: match.score_band, default_probability: match.default_probability });
           }
-        })
-        .catch((err) => console.error("Failed to refresh samples:", err));
+        }
+      });
     }
   }, [refreshKey]);
 
@@ -214,13 +203,14 @@ function PureApplicantProfilePanel({
         };
         onProfileChange(updated);
 
-        // Also update in samples list
-        setSamples((prev) =>
-          prev.map((s) =>
+        // Also update in SWR cache
+        mutateSamples(
+          (prev) => prev?.map((s) =>
             s.id === selectedProfile.id
               ? { ...s, score: data.credit_score, score_band: data.score_band, default_probability: data.default_probability }
               : s
-          )
+          ),
+          { revalidate: false }
         );
       }
     } catch (err) {
@@ -282,12 +272,13 @@ function PureApplicantProfilePanel({
             default_probability: null,
           };
           onProfileChange(profile);
-          setSamples((prev) =>
-            prev.map((s) =>
+          mutateSamples(
+            (prev) => prev?.map((s) =>
               s.id === selectedProfile.id
                 ? { ...s, fields: data.fields, score: null, score_band: null, default_probability: null }
                 : s
-            )
+            ),
+            { revalidate: false }
           );
         } else {
           // Fallback to local update
