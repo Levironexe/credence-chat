@@ -19,12 +19,16 @@ import {
 
 const NODE_LABELS: Record<string, string> = {
   classify: "Classifying query",
-  data_completeness: "Checking data completeness",
+  metric_extraction: "Extracting metric overrides",
+  fetch_merchant_data: "Fetching merchant profile",
+  document_ingestion: "Processing documents",
+  data_completeness: "Loading applicant data",
   planning: "Planning analysis",
   credit_scoring: "Computing credit score",
   explainability: "Analyzing score factors",
-  fairness_check: "Validating fairness",
+  fairness_check: "Checking lending fairness",
   counterfactual_generation: "Generating improvement paths",
+  analysis: "Synthesizing findings",
   response: "Generating report",
 };
 

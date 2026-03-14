@@ -21,6 +21,7 @@ export interface SSEChunk {
   tool?: string;
   input?: Record<string, any>;
   output?: any;
+  isError?: boolean;
 }
 
 // Part types for the parts array
@@ -219,7 +220,7 @@ export class SSEEventHandler {
           name: part.name,
           input: part.input,
           output: chunk.output,
-          isError: false,
+          isError: chunk.isError ?? false,
         };
         this.parts[i] = resultPart;
         break;
