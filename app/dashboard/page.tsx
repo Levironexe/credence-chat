@@ -192,8 +192,19 @@ export default function Dashboard() {
           {/* List */}
           <div className="flex-1 overflow-y-auto">
             {listLoading ? (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-sm text-muted-foreground">Loading…</p>
+              <div className="animate-pulse">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="px-3 py-3 border-b border-border space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="h-4 w-32 bg-muted rounded" />
+                      <div className="h-5 w-14 bg-muted rounded-full" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-4 w-10 bg-muted rounded-md" />
+                      <div className="h-3 w-16 bg-muted/60 rounded" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : filteredApplicants.length === 0 ? (
               <div className="flex items-center justify-center h-32">
@@ -247,13 +258,13 @@ export default function Dashboard() {
 
         {/* ── Right: Detail Panel ───────────────────────────────────────────── */}
         <main className="flex-1 overflow-y-auto">
-          {!selectedApplicant ? (
+          {!selectedApplicant && !listLoading ? (
             <div className="flex items-center justify-center h-full min-h-[400px]">
               <p className="text-muted-foreground text-sm">
                 Select an applicant from the list
               </p>
             </div>
-          ) : detailLoading ? (
+          ) : listLoading || detailLoading ? (
             <div className="px-6 py-6 space-y-6 animate-pulse">
               {/* Header skeleton */}
               <div className="flex items-center justify-between">
