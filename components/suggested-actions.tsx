@@ -18,7 +18,6 @@ type SuggestedActionsProps = {
 function PureSuggestedActions({ chatId, sendMessage, selectedProfile }: SuggestedActionsProps) {
   const suggestedActions = useMemo(() => {
     if (selectedProfile && selectedProfile.id !== "custom") {
-      // Sample applicant selected — show profile-specific actions
       return [
         `Assess this applicant's creditworthiness`,
         `What are the key risk factors?`,
