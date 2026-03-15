@@ -16,7 +16,7 @@ export function LandingFooter() {
         </div>
 
         <div className="flex items-center gap-6 text-xs text-white/25">
-          <span>Built on Claude · Amazon Bedrock</span>
+          <span>Built on Claude</span>
           <span className="text-white/10">|</span>
           <Link href="/dashboard" className="hover:text-white/60 transition-colors">
             Dashboard
@@ -26,7 +26,17 @@ export function LandingFooter() {
           </Link>
         </div>
 
-        <p className="text-xs text-white/25">© 2026 Credence</p>
+        <p className="text-xs text-white/25">
+          © 2026 Credence · Design inspired by{" "}
+          <a
+            href="https://vercel.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-white/60 transition-colors underline underline-offset-2"
+          >
+            Vercel
+          </a>
+        </p>
       </div>
           </div>
     </footer>

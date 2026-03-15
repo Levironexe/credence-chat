@@ -9,10 +9,10 @@ import { SessionProvider } from "next-auth/react";
 export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
   title: {
-    default: "New chat",
-    template: "%s",
+    default: "Credence",
+    template: "%s | Credence",
   },
-  description: "AI Chatbot for CyberSecurity",
+  description: "Agentic credit assessment for micro-SMEs.",
 };
 
 export const viewport = {
