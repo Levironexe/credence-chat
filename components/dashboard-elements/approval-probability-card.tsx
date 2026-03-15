@@ -19,24 +19,28 @@ export function ApprovalProbabilityCard({
       label: 'At Risk',
       bgClass: 'bg-red-500/20',
       textClass: 'text-red-400',
+      barClass: 'bg-red-500',
       description: 'Your application is currently at risk of rejection.',
     },
     'fair-standing': {
       label: 'Fair Standing',
       bgClass: 'bg-orange-500/20',
       textClass: 'text-orange-400',
+      barClass: 'bg-orange-400',
       description: 'Your application has a moderate chance of approval.',
     },
     'good-standing': {
       label: 'Good Standing',
       bgClass: 'bg-yellow-500/20',
       textClass: 'text-yellow-400',
+      barClass: 'bg-yellow-400',
       description: 'Your application is in good condition.',
     },
     'pre-approved': {
       label: 'Pre-Approved',
       bgClass: 'bg-green-500/20',
       textClass: 'text-green-400',
+      barClass: 'bg-green-500',
       description: 'Congratulations! Your application is pre-approved.',
     },
   };
@@ -44,7 +48,7 @@ export function ApprovalProbabilityCard({
   const config = statusConfig[status];
 
   return (
-    <div className="relative w-full bg-card  rounded-lg p-8">
+    <div className="relative w-full bg-card rounded-[14px] border border-border p-8">
       <div className="space-y-6">
         {/* Status Badge */}
         <div>
@@ -57,7 +61,7 @@ export function ApprovalProbabilityCard({
         <div className="space-y-3">
           <p className="text-muted-foreground text-sm">LOAN APPROVAL PROBABILITY</p>
           <div className="flex items-baseline gap-2">
-            <div className="text-5xl font-bold text-accent">{probability}%</div>
+            <div className="text-5xl font-bold text-foreground">{probability}%</div>
             <span className="text-muted-foreground">chance of approval</span>
           </div>
         </div>
@@ -66,7 +70,7 @@ export function ApprovalProbabilityCard({
         <div className="space-y-2">
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
             <div
-              className="bg-accent h-full rounded-full transition-all duration-500"
+              className={`${config.barClass} h-full rounded-full transition-all duration-500`}
               style={{ width: `${probability}%` }}
             />
           </div>
@@ -98,10 +102,10 @@ export function ApprovalProbabilityCard({
             <div className="space-y-1">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Recommended</span>
-                <span className="font-semibold text-accent">${(recommendedAmount / 1000).toFixed(0)}k</span>
+                <span className="font-semibold text-foreground">${(recommendedAmount / 1000).toFixed(0)}k</span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className="bg-accent h-full rounded-full" style={{ width: `${(recommendedAmount / requestedAmount) * 100}%` }} />
+                <div className="bg-foreground/70 h-full rounded-full" style={{ width: `${Math.min((recommendedAmount / requestedAmount) * 100, 100)}%` }} />
               </div>
             </div>
           </div>
