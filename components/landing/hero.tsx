@@ -52,7 +52,7 @@ export function LandingHero() {
                 style={{ animation: "fadeUp 0.5s ease both" }}
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Powered by Anthropic
+                Powered by Claude
               </div>
 
               {/* Headline */}
