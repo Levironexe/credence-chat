@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { ImprovementSuggestion } from '@/lib/mockData';
+import type { ImprovementSuggestion } from '@/lib/dashboard/mockData';
 import { ImprovementCard } from './improvement-card';
 
 interface ImprovementSuggestionsProps {

@@ -81,6 +81,10 @@ export function Chat({
 
   useEffect(() => {
     selectedProfileRef.current = selectedProfile;
+    // Bridge for dashboard page
+    if (typeof window !== 'undefined' && selectedProfile?.id && selectedProfile.id !== 'custom') {
+      localStorage.setItem('selectedApplicantId', String(selectedProfile.id));
+    }
   }, [selectedProfile]);
 
   // Sync ref with state
