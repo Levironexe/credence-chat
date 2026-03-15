@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import RollingText from "./ui/rolling-text";
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false);
+  const [hoverKey, setHoverKey] = useState(0);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -35,7 +37,7 @@ export function LandingNav() {
             <a
               key={item}
               href={`#${item.toLowerCase().replace(/\s+/g, "-")}`}
-              className="text-sm text-white/50 hover:text-white transition-colors duration-200"
+              className="text-sm text-white/50 hover:text-white hover:bg-white/[0.06] py-[6px] px-4 rounded-full transition-colors duration-200"
             >
               {item}
             </a>
@@ -45,11 +47,12 @@ export function LandingNav() {
         {/* CTA */}
         <Link
           href="/new"
-          className="text-sm px-4 py-1.5 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-colors duration-200"
+          className="text-sm px-4 py-1.5 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-colors duration-200 overflow-visible"
+          onMouseEnter={() => setHoverKey((k) => k + 1)}
         >
-          Get Started
+          <RollingText key={hoverKey} text="Get Started" />
         </Link>
-      </div>
+</div>
       </div>
     </header>
   );

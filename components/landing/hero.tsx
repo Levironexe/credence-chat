@@ -81,7 +81,7 @@ export function LandingHero() {
               >
                 <Link
                   href="/new"
-                  className="px-6 py-2.5 rounded-full bg-white text-black text-sm font-semibold hover:bg-white/90 transition-colors"
+                  className="px-6 py-2.5 rounded-full bg-white font-medium text-black text-sm hover:bg-white/90 transition-colors"
                 >
                   Start Assessment
                 </Link>

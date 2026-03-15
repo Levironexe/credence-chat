@@ -46,7 +46,7 @@ export function LandingComparison() {
       <div className="max-w-6xl mx-auto px-6">
         <div className="border-x border-b border-border px-8 py-16">
         <div className="mb-16">
-          <p className="text-xs text-white/30 uppercase tracking-widest mb-3">
+          <p className="text-xs text-white/50 uppercase tracking-widest mb-3">
             Why Credence
           </p>
           <h2 className="font-lora text-3xl sm:text-4xl font-semibold text-white max-w-lg leading-tight">
@@ -57,17 +57,17 @@ export function LandingComparison() {
         {/* Table */}
         <div className="rounded-2xl border border-border overflow-hidden">
           {/* Header */}
-          <div className="grid grid-cols-4 bg-white/[0.03] border-b border-border">
-            <div className="px-5 py-3 text-xs text-white/30 uppercase tracking-widest">
+          <div className="grid grid-cols-4 bg-white/[0.03] border-b border-border text-white font-medium ">
+            <div className="px-5 py-3 text-xs text-white uppercase tracking-widest">
               Capability
             </div>
-            <div className="px-5 py-3 text-xs text-white/30 uppercase tracking-widest border-l border-border">
+            <div className="px-5 py-3 text-xs text-white uppercase tracking-widest border-l border-border">
               Traditional
             </div>
-            <div className="px-5 py-3 text-xs text-white/30 uppercase tracking-widest border-l border-border">
+            <div className="px-5 py-3 text-xs uppercase tracking-widest border-l border-border">
               ML-based
             </div>
-            <div className="px-5 py-3 text-xs text-white/60 uppercase tracking-widest border-l border-border bg-white/[0.03]">
+            <div className="px-5 py-3 text-xs uppercase tracking-widest border-l border-border bg-white/[0.03]">
               Credence
             </div>
           </div>
@@ -82,10 +82,10 @@ export function LandingComparison() {
               <div className="px-5 py-3.5 text-sm text-white/50">
                 {row.capability}
               </div>
-              <div className="px-5 py-3.5 text-sm text-white/25 border-l border-white/[0.04]">
+              <div className="px-5 py-3.5 text-sm text-white/50 border-l border-white/[0.04]">
                 {row.traditional}
               </div>
-              <div className="px-5 py-3.5 text-sm text-white/25 border-l border-white/[0.04]">
+              <div className="px-5 py-3.5 text-sm text-white/50 border-l border-white/[0.04]">
                 {row.mlBased}
               </div>
               <div className="px-5 py-3.5 text-sm text-white/80 font-medium border-l border-border flex items-center gap-2">
@@ -96,7 +96,7 @@ export function LandingComparison() {
           ))}
         </div>
 
-        <p className="mt-6 text-xs text-white/25 max-w-lg leading-relaxed">
+        <p className="mt-6 text-xs text-white/50 max-w-lg leading-relaxed">
           Credence is the first to apply the ReAct agentic pattern to end-to-end credit assessment for underbanked populations — composing scoring, explanation, and improvement guidance in a single natural-language interface.
         </p>
       </div>
