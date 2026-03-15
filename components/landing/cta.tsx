@@ -32,13 +32,13 @@ export function LandingCTA() {
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/new"
-              className="px-6 py-2.5 rounded-md bg-white text-black text-sm font-medium hover:bg-white/90 transition-colors"
+              className="px-6 py-2.5 rounded-full bg-white text-black text-sm font-medium hover:bg-white/90 transition-colors"
             >
               Try the Demo
             </Link>
             <Link
               href="/dashboard"
-              className="px-6 py-2.5 rounded-md border border-white/10 text-white/70 text-sm hover:border-white/20 hover:text-white transition-colors"
+              className="px-6 py-2.5 bg-black rounded-full border border-white/10 text-white/ text-sm hover:border-white/20 hover:bg-black/70 transition-colors"
             >
               View Loan Officer Dashboard
             </Link>

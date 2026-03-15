@@ -45,7 +45,7 @@ export function LandingNav() {
         {/* CTA */}
         <Link
           href="/new"
-          className="text-sm px-4 py-1.5 rounded-md bg-white text-black font-medium hover:bg-white/90 transition-colors duration-200"
+          className="text-sm px-4 py-1.5 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-colors duration-200"
         >
           Get Started
         </Link>
