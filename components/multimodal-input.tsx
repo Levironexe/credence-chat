@@ -448,7 +448,7 @@ function PureAttachmentsButton({
       className="aspect-square h-8 rounded-full p-1 transition-colors bg-muted text-muted-foreground cursor-pointer duration-200"
       data-testid="attachments-button"
       disabled={status !== "ready" || isReasoningModel}
-      onClick={(event) => {
+      onClick={(event: any) => {
         event.preventDefault();
         fileInputRef.current?.click();
       }}
@@ -545,7 +545,7 @@ function PureStopButton({
     <Button
       className="size-7 rounded-full bg-foreground p-1 text-background transition-colors duration-200 hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
       data-testid="stop-button"
-      onClick={(event) => {
+      onClick={(event: any) => {
         event.preventDefault();
         stop();
         setMessages((messages) => messages);
