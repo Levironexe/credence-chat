@@ -1,4 +1,4 @@
-ALTER TABLE "Chat" ADD COLUMN "lastContext" jsonb;--> statement-breakpoint
+ALTER TABLE "Chat" ADD COLUMN IF NOT EXISTS "lastContext" jsonb;--> statement-breakpoint
 ALTER TABLE "Message_v2" ADD COLUMN "timelineEvents" jsonb DEFAULT '[]'::jsonb;--> statement-breakpoint
 ALTER TABLE "Message_v2" ADD COLUMN "provider" varchar(20);--> statement-breakpoint
 ALTER TABLE "User" ADD COLUMN "googleId" varchar(255);--> statement-breakpoint
