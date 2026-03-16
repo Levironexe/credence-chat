@@ -369,7 +369,7 @@ function PureApplicantProfilePanel({
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={isLoadingSamples ? "Loading..." : "Select an applicant..."} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[200]">
                   {isLoadingSamples ? (
                     <div className="flex items-center justify-center py-4">
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
