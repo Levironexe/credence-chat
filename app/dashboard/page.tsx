@@ -420,7 +420,7 @@ export default function Dashboard() {
                           What's Affecting the Score
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                          Key factors identified from SHAP analysis.
+                          Key factors identified from the credit assessment.
                         </p>
                       </div>
                       <CreditFactorsList factors={creditFactors} />
@@ -435,7 +435,7 @@ export default function Dashboard() {
                           Path to Approval
                         </h2>
                         <p className="text-sm text-muted-foreground">
-                          Counterfactual changes that would most improve this applicant's
+                          Concrete changes that would most improve this applicant's
                           approval odds.
                         </p>
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
-import { useState } from "react";
+import React, { useState } from "react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
 import { cn, sanitizeText } from "@/lib/utils";
@@ -456,11 +456,10 @@ const PurePreviewMessage = ({
   );
 };
 
-export const PreviewMessage = PurePreviewMessage;
+export const PreviewMessage = React.memo(PurePreviewMessage);
 
 // Map tool/node names to user-friendly loading labels
 const LOADING_LABELS: Record<string, string> = {
-  applicant_lookup: "Loading applicant data",
   credit_score_model: "Computing credit score",
   shap_explainer: "Analyzing score factors",
   fairness_validator: "Validating fairness",

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import { cn } from "@/lib/utils";
 import { BarChart3Icon, TableIcon } from "lucide-react";
@@ -377,6 +377,8 @@ function ShapToggleView({
             src={imageUrl}
             alt="SHAP Waterfall Plot"
             className="w-full max-w-[700px] rounded-lg"
+            loading="lazy"
+            decoding="async"
           />
         </div>
       ) : (
@@ -398,9 +400,9 @@ export function Response({ className, children, ...props }: ResponseProps) {
     className
   );
 
-  // Check if markdown contains a SHAP image+table section to toggle
+  // Memoize SHAP section parsing — avoid re-running regex on every render/scroll
   const markdown = typeof children === "string" ? children : "";
-  const segments = splitShapSections(markdown);
+  const segments = useMemo(() => splitShapSections(markdown), [markdown]);
 
   // If no SHAP section found, render normally
   if (segments.length === 1 && segments[0].type === "text") {
