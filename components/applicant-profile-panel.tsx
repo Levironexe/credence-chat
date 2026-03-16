@@ -316,7 +316,7 @@ function PureApplicantProfilePanel({
       {/* Toggle button */}
       <button
         onClick={onToggle}
-        className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-primary text-primary-foreground p-2 rounded-l-lg shadow-lg hover:bg-primary/90 transition-colors"
+        className="fixed right-0 top-1/2 -translate-y-1/2 z-80 bg-primary text-primary-foreground p-2 rounded-l-lg shadow-lg hover:bg-primary/90 transition-colors"
         aria-label={isOpen ? "Close applicant panel" : "Open applicant panel"}
       >
         {isOpen ? (
@@ -329,6 +329,21 @@ function PureApplicantProfilePanel({
         )}
       </button>
 
+      {/* Backdrop — click outside to close */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-60"
+            onClick={onToggle}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Panel */}
       <AnimatePresence>
         {isOpen && (
@@ -337,10 +352,10 @@ function PureApplicantProfilePanel({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-dvh w-80 bg-background border-l border-border shadow-xl z-30 flex flex-col"
+            className="fixed right-0 top-0 h-dvh w-80 bg-background border-l border-border shadow-xl z-70 flex flex-col"
           >
             {/* Header */}
-            <div className="p-4 pt-14 border-b border-border">
+            <div className="p-4 border-b border-border">
               <div className="flex items-center gap-2 mb-3">
                 <UserCircle className="h-5 w-5 text-primary" />
                 <h2 className="text-base font-semibold">Applicant Profile</h2>
