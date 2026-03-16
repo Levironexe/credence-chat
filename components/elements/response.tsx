@@ -408,7 +408,7 @@ export function Response({ className, children, ...props }: ResponseProps) {
       <Streamdown
         className={streamdownClass}
         components={customComponents}
-        urlTransform={allowDataImageUrls}
+        {...({ urlTransform: allowDataImageUrls } as any)}
         {...props}
       >
         {children}
@@ -426,7 +426,7 @@ export function Response({ className, children, ...props }: ResponseProps) {
               key={i}
               className="[&_code]:whitespace-pre-wrap [&_code]:break-words [&_pre]:max-w-full [&_pre]:overflow-x-auto"
               components={customComponents}
-              urlTransform={allowDataImageUrls}
+              {...({ urlTransform: allowDataImageUrls } as any)}
               {...props}
             >
               {segment.content}
