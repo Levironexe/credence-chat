@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Poppins, Lora } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Analytics } from "@vercel/analytics/next";
 
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
@@ -9,10 +10,10 @@ import { SessionProvider } from "next-auth/react";
 export const metadata: Metadata = {
   metadataBase: new URL("https://chat.vercel.ai"),
   title: {
-    default: "New chat",
-    template: "%s",
+    default: "Credence",
+    template: "%s | Credence",
   },
-  description: "AI Chatbot for CyberSecurity",
+  description: "Agentic credit assessment for micro-SMEs.",
 };
 
 export const viewport = {
@@ -84,6 +85,7 @@ export default function RootLayout({
         >
           <Toaster position="top-center" />
           <SessionProvider>{children}</SessionProvider>
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>

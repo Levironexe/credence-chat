@@ -1,6 +1,6 @@
 'use client';
 
-import type { ImprovementSuggestion } from '@/lib/mockData';
+import type { ImprovementSuggestion } from '@/lib/dashboard/mockData';
 
 interface ImprovementCardProps {
   suggestion: ImprovementSuggestion;

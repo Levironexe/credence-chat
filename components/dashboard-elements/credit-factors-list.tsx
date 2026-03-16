@@ -1,6 +1,6 @@
 'use client';
 
-import type { CreditFactor } from '@/lib/mockData';
+import type { CreditFactor } from '@/lib/dashboard/mockData';
 
 interface CreditFactorsListProps {
   factors: CreditFactor[];

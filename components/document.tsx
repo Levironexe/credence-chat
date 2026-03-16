@@ -38,7 +38,7 @@ function PureDocumentToolResult({
   return (
     <button
       className="flex w-fit cursor-pointer flex-row items-start gap-3 rounded-xl border bg-background px-3 py-2"
-      onClick={(event) => {
+      onClick={(event: any) => {
         if (isReadonly) {
           toast.error(
             "Viewing files in shared chats is currently not supported."
@@ -104,7 +104,7 @@ function PureDocumentToolCall({
   return (
     <button
       className="cursor pointer flex w-fit flex-row items-start justify-between gap-3 rounded-xl border px-3 py-2"
-      onClick={(event) => {
+      onClick={(event: any) => {
         if (isReadonly) {
           toast.error(
             "Viewing files in shared chats is currently not supported."

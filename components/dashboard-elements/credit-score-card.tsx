@@ -24,7 +24,7 @@ export function CreditScoreCard({ score, maxScore }: CreditScoreCardProps) {
   }
 
   return (
-    <div className="relative w-full bg-card p-8">
+    <div className="relative w-full bg-card rounded-[14px] border border-border p-8">
       <div className="flex flex-col items-center justify-center">
         {/* Circular Progress */}
         <div className="relative w-40 h-40 mb-6">
@@ -48,7 +48,7 @@ export function CreditScoreCard({ score, maxScore }: CreditScoreCardProps) {
               stroke="currentColor"
               strokeWidth="8"
               strokeDasharray={`${(percentage / 100) * 440} 440`}
-              className="text-accent transition-all duration-500"
+              className={`${colorClass} transition-all duration-500`}
               strokeLinecap="round"
             />
           </svg>

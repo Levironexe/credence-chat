@@ -81,7 +81,7 @@ export function AppSidebar({ user }: { user: User | undefined }) {
                 }}
               >
                 <span className="cursor-pointer font-lora rounded-[14px] px-2 font-semibold text-xl">
-                  Credence  
+                  Credence
                 </span>
               </Link>
               <div className="flex flex-row gap-1">
