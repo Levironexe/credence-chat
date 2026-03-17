@@ -75,7 +75,7 @@ export function CreditScoreCard({ score, maxScore }: CreditScoreCardProps) {
           <div className="flex items-center justify-center gap-2">
             <span className="text-lg font-semibold text-foreground">710</span>
             <span className={`text-xs font-medium ${score > 710 ? 'text-green-500' : 'text-red-500'}`}>
-              {score > 710 ? '↓' : '↑'} {Math.abs(score - 710)} points
+              {score > 710 ? '↑' : '↓'} {Math.abs(score - 710)} points
             </span>
           </div>
         </div>

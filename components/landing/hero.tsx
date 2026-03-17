@@ -19,7 +19,7 @@ export function LandingHero() {
       <div className="relative w-full max-w-6xl mx-auto px-6">
         {/* Bordered frame with + corners */}
         <div className="relative border-y border-x border-border">
-          <div className="reletive aspect-square px-8 py-20 flex flex-col items-center text-center">
+          <div className="relative aspect-square px-8 py-20 flex flex-col items-center text-center">
             <div className=" w-full absolute bottom-0">
               <div className="grid grid-cols-12 grid-rows-2">
                 {Array.from({ length: 24 }).map((_, i) => (

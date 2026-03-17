@@ -1,39 +1,38 @@
-const features = [
+const tools = [
   {
-    eyebrow: "Input",
-    name: "Plain language, not forms",
+    icon: "◈",
+    name: "Credit Scoring Engine",
     description:
-      "Loan officers describe the applicant in natural language. The agent extracts every field it needs — no rigid input forms, no manual data entry.",
+      "Predicts default probability and maps it to a familiar 300–850 score scale. Industry-leading accuracy ensures reliable, consistent decisions.",
+    detail: "Score 300–850",
   },
   {
-    eyebrow: "Inclusion",
-    name: "Works without a credit history",
+    icon: "⬡",
+    name: "Score Factor Analysis",
     description:
-      "Alternative data — POS revenue, mobile money, utility payments, order consistency — fills the gap for the 70%+ of micro-SMEs with no formal credit file.",
+      "Breaks down every score into specific factor contributions so loan officers can explain exactly why a decision was made. No black boxes.",
+    detail: "Per-decision",
   },
   {
-    eyebrow: "Rejection",
-    name: "Every 'no' comes with a path forward",
+    icon: "⟳",
+    name: "Improvement Path Generator",
     description:
-      "Rejected applicants get a concrete counterfactual plan: what to change, by how much, and in what timeframe to reach the next score band.",
+      "Creates realistic, actionable paths to approval. Suggests concrete changes — like reducing loan amount or increasing tenure — bounded by real-world constraints.",
+    detail: "Actionable paths",
   },
   {
-    eyebrow: "Speed",
-    name: "Seconds, not days",
+    icon: "⊜",
+    name: "Fairness Validator",
     description:
-      "Score, explain, validate for fairness, and generate improvement paths — end to end in under 10 seconds. P95 latency target: 3s.",
+      "Checks that decisions are consistent regardless of gender, age, or other protected attributes. Ensures demographic parity gap stays below 5%.",
+    detail: "Bias detection",
   },
   {
-    eyebrow: "Transparency",
-    name: "No black boxes",
+    icon: "⌖",
+    name: "Data Completeness Checker",
     description:
-      "Every decision ships with SHAP feature attributions and a waterfall plot. Loan officers see exactly which factors drove the score — and by how much.",
-  },
-  {
-    eyebrow: "Autonomy",
-    name: "Agent picks the tools, not you",
-    description:
-      "The ReAct-pattern agent reasons about what the query needs, chains the right ML tools in the right order, and synthesises results — without manual configuration.",
+      "Identifies missing fields and ranks them by how much they'd affect the score. Only asks for the inputs that matter most — saving time for loan officers.",
+    detail: "Smart prioritization",
   },
 ];
 
@@ -42,48 +41,54 @@ export function LandingFeatures() {
     <section id="features" className="bg-black">
       <div className="max-w-6xl mx-auto px-6">
         <div className="border-x border-b border-border px-8 py-16">
-          {/* Section header */}
-          <div className="mb-16">
-            <p className="text-xs text-white/50 uppercase tracking-widest mb-3">
-              Why it matters
-            </p>
-            <h2 className="font-lora text-3xl sm:text-4xl font-semibold text-white max-w-lg leading-tight">
-              Built for the borrowers other systems miss.
-            </h2>
-            <p className="mt-4 text-white/45 text-sm max-w-md leading-relaxed">
-              30–40% of MSME rejections come from data gaps, not actual risk.
-              Credence closes that gap with an agent that sees the full picture.
-            </p>
-          </div>
+        {/* Section header */}
+        <div className="mb-16 ">
+          <p className="text-xs text-white/30 uppercase tracking-widest mb-3">
+            Five autonomous tools
+          </p>
+          <h2 className="font-lora text-3xl sm:text-4xl font-semibold text-white max-w-lg leading-tight">
+            One agent. Every capability you need.
+          </h2>
+          <p className="mt-4 text-white/45 text-sm max-w-md leading-relaxed">
+            The Credence agent autonomously decides which tools to call and in
+            what order — score → explain → suggest improvements — without manual
+            configuration.
+          </p>
+        </div>
 
-          {/* Feature grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden border border-border">
-            {features.map((feature, i) => (
-              <div
-                key={feature.name}
-                className={`group relative bg-black p-6 hover:bg-white/[0.03] transition-colors duration-300 ${
-                  i === 5 ? "sm:col-span-2 lg:col-span-1" : ""
-                }`}
-              >
-                <div className="flex items-start justify-end mb-4">
-                  <span className="text-[10px] text-white/25 border border-white/10 rounded-full px-2 py-0.5">
-                    {feature.eyebrow}
-                  </span>
-                </div>
-
-                <h3 className="text-sm font-medium text-white mb-2">
-                  {feature.name}
-                </h3>
-                <p className="text-xs text-white/40 leading-relaxed">
-                  {feature.description}
-                </p>
-
-                <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* Tool grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden border border-border">
+          {tools.map((tool, i) => (
+            <div
+              key={tool.name}
+              className={`group relative bg-black p-6 hover:bg-white/[0.03] transition-colors duration-300 ${
+                i === 4 ? "sm:col-span-2 lg:col-span-1" : ""
+              }`}
+            >
+              {/* Icon + badge */}
+              <div className="flex items-start justify-between mb-4">
+                <span className="text-2xl text-white/20 group-hover:text-white/40 transition-colors">
+                  {tool.icon}
+                </span>
+                <span className="text-[10px] text-white/25 border border-white/10 rounded-full px-2 py-0.5">
+                  {tool.detail}
+                </span>
               </div>
-            ))}
-          </div>
+
+              <h3 className="text-sm font-medium text-white mb-2">
+                {tool.name}
+              </h3>
+              <p className="text-xs text-white/40 leading-relaxed">
+                {tool.description}
+              </p>
+
+              {/* Hover accent line */}
+              <div className="absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+          ))}
         </div>
       </div>
+          </div>
     </section>
   );
 }
