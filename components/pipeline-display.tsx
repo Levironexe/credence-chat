@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   ChevronDown,
   ChevronRight,
   Brain,
+  Box,
   Wrench,
   CheckCircle2,
   Loader2,
@@ -37,44 +39,88 @@ interface PipelinePart {
   data?: any;
 }
 
-function ReasoningBlock({ content, node }: { content: string; node?: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-
+function ReasoningContent({ content }: { content: string }) {
   return (
-    <div className="overflow-hidden text-muted-foreground">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 py-1"
-      >
-        {isOpen ? (
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-        ) : (
-          <div className="group relative w-3.5 h-3.5">
-            <Brain className="w-3.5 h-3.5 text-muted-foreground group-hover:hidden" />
-            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground hidden group-hover:block" />
-          </div>
-        )}
-        <span className="text-sm text-muted-foreground">
-          {node ? `Thinking (${node.replace(/_/g, " ")})` : "Thinking"}
-        </span>
-      </button>
-
-      {isOpen && (
-        <div className="border-l border-muted-foreground/20 ml-1.5 px-4 py-2">
-          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{content}</p>
-        </div>
-      )}
+    <div className="border-l border-muted-foreground/20 ml-1.5 mt-1 px-4 py-2">
+      <div className="text-sm text-muted-foreground/70 prose prose-sm prose-invert max-w-none
+        prose-headings:text-muted-foreground/70 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+        prose-p:my-1 prose-p:leading-snug
+        prose-strong:text-muted-foreground/70 prose-strong:font-semibold
+        prose-ul:my-1 prose-ul:pl-4 prose-li:my-0.5
+        prose-ol:my-1 prose-ol:pl-4
+        prose-hr:border-muted-foreground/20 prose-hr:my-2">
+        <ReactMarkdown>{content}</ReactMarkdown>
+      </div>
     </div>
   );
 }
 
-function NodeStartBlock({ title, node }: { title: string; node: string }) {
+function ElapsedTimer({ startedAt, isActive }: { startedAt: number; isActive: boolean }) {
+  const [elapsed, setElapsed] = useState(() => (Date.now() - startedAt) / 1000);
+
+  useEffect(() => {
+    if (!isActive) {
+      setElapsed((Date.now() - startedAt) / 1000);
+      return;
+    }
+    const id = setInterval(() => {
+      setElapsed((Date.now() - startedAt) / 1000);
+    }, 100);
+    return () => clearInterval(id);
+  }, [isActive, startedAt]);
+
+  return (
+    <span className="shrink-0 font-mono text-xs text-muted-foreground/60">
+      {elapsed.toFixed(1)}s
+    </span>
+  );
+}
+
+function NodeStartBlock({
+  title,
+  node,
+  startedAt,
+  isActive,
+  reasoning,
+}: {
+  title: string;
+  node: string;
+  startedAt: number;
+  isActive: boolean;
+  reasoning?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  if (reasoning) {
+    return (
+      <div>
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center gap-2 py-1 text-muted-foreground hover:text-muted-foreground/80"
+        >
+          {isOpen ? (
+            <ChevronDown className="w-3 h-3 shrink-0" />
+          ) : (
+            <ChevronRight className="w-3 h-3 shrink-0" />
+          )}
+          <Brain className="w-3 h-3 shrink-0 text-muted-foreground/60" />
+          <span className="text-sm">
+            {title || NODE_LABELS[node] || node.replace(/_/g, " ")}
+          </span>
+          <ElapsedTimer startedAt={startedAt} isActive={isActive} />
+        </button>
+        {isOpen && <ReasoningContent content={reasoning} />}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center gap-2 py-1 text-muted-foreground">
-      <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />
+      <Box className="w-3 h-3 shrink-0" />
       <span className="text-sm">
         {title || NODE_LABELS[node] || node.replace(/_/g, " ")}
       </span>
+      <ElapsedTimer startedAt={startedAt} isActive={isActive} />
     </div>
   );
 }
@@ -86,8 +132,8 @@ function NodeStartBlock({ title, node }: { title: string; node: string }) {
  * position of the first tool_call).
  */
 type DisplayItem =
-  | { kind: "node"; title: string; node: string }
-  | { kind: "reasoning"; content: string; node?: string }
+  | { kind: "node"; title: string; node: string; reasoning?: string }
+  | { kind: "reasoning"; content: string; node?: string } // fallback: orphan reasoning
   | {
       kind: "tool";
       name: string;
@@ -97,15 +143,29 @@ type DisplayItem =
       hasResult: boolean;
     };
 
+// These nodes are no-ops in the current deployment and add noise to the trace.
+// fetch_merchant_data: MCP tools disabled, hits fallback immediately.
+// analysis: pure pass-through; response node does all report generation.
+const SKIP_NODES = new Set(["fetch_merchant_data", "analysis"]);
+
 function buildOrderedItems(parts: PipelinePart[]): DisplayItem[] {
   const items: DisplayItem[] = [];
   const toolIndexMap = new Map<string, number>(); // tool name -> index in items[]
 
   for (const part of parts) {
     if (part.type === "data-node-start" && part.data) {
+      if (SKIP_NODES.has(part.data.node)) continue;
       items.push({ kind: "node", title: part.data.title, node: part.data.node });
     } else if (part.type === "data-reasoning" && part.data) {
-      items.push({ kind: "reasoning", content: part.data.content, node: part.data.node });
+      // Attach reasoning to its parent node item if one exists with the same node name
+      const parentNode = part.data.node
+        ? (items.findLast((i) => i.kind === "node" && i.node === part.data.node) as Extract<DisplayItem, { kind: "node" }> | undefined)
+        : undefined;
+      if (parentNode) {
+        parentNode.reasoning = part.data.content;
+      } else {
+        items.push({ kind: "reasoning", content: part.data.content, node: part.data.node });
+      }
     } else if (part.type === "data-tool-call" && part.data) {
       const { name, input } = part.data;
       if (!toolIndexMap.has(name)) {
@@ -138,10 +198,19 @@ export function PipelineDisplay({
   isLoading: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const nodeTimestamps = useRef<Map<string, number>>(new Map());
 
   if (parts.length === 0) return null;
 
   const items = buildOrderedItems(parts);
+
+  // Record timestamp the first time each node appears
+  const now = Date.now();
+  for (const item of items) {
+    if (item.kind === "node" && !nodeTimestamps.current.has(item.node)) {
+      nodeTimestamps.current.set(item.node, now);
+    }
+  }
   const toolCount = items.filter((i) => i.kind === "tool").length;
   const nodeCount = items.filter((i) => i.kind === "node").length;
 
@@ -174,23 +243,25 @@ export function PipelineDisplay({
         <div className="px-3 py-2 space-y-1">
           {items.map((item, index) => {
             if (item.kind === "node") {
+              const nodeItems = items.filter((i) => i.kind === "node");
+              const isLastNode = nodeItems[nodeItems.length - 1] === item;
+              const isActiveNode = isLoading && isLastNode;
+              const startedAt = nodeTimestamps.current.get(item.node) ?? Date.now();
               return (
                 <NodeStartBlock
                   key={`item-${index}`}
                   title={item.title}
                   node={item.node}
+                  startedAt={startedAt}
+                  isActive={isActiveNode}
+                  reasoning={item.reasoning}
                 />
               );
             }
 
             if (item.kind === "reasoning") {
-              return (
-                <ReasoningBlock
-                  key={`item-${index}`}
-                  content={item.content}
-                  node={item.node}
-                />
-              );
+              // Orphan reasoning (no matching node) — render standalone
+              return <ReasoningContent key={`item-${index}`} content={item.content} />;
             }
 
             if (item.kind === "tool") {
