@@ -32,7 +32,6 @@ import type { VisibilityType } from "./visibility-selector";
 import { useStructuredChat } from "@/hooks/use-structured-chat";
 import { useMessageAdapter } from "@/hooks/use-message-adapter";
 import { ApplicantProfilePanel, type ApplicantProfileType } from "./applicant-profile-panel";
-import { NodeGraphVisualizer } from "./node-graph-visualizer";
 
 export function Chat({
   id,
@@ -122,28 +121,7 @@ export function Chat({
   const currentProvider = currentModelIdRef.current?.split("/")[0];
   const messages = useMessageAdapter(rawMessages, initialMessages, currentProvider, liveTimeline);
 
-  // Derive active/completed nodes from the last assistant message's node-start parts.
-  // Deduplicate by first-seen order so a node that re-fires (e.g. classify looping back)
-  // doesn't steal the active slot from nodes that ran later.
-  const { activeNode, completedNodes } = useMemo(() => {
-    const lastMsg = rawMessages[rawMessages.length - 1];
-    if (!lastMsg || lastMsg.role !== "assistant" || !lastMsg.parts) {
-      return { activeNode: null, completedNodes: [] as string[] };
-    }
-    const seen = new Set<string>();
-    const orderedNodes: string[] = [];
-    for (const p of lastMsg.parts as any[]) {
-      if (p.type === "node-start" && p.node && !seen.has(p.node)) {
-        seen.add(p.node);
-        orderedNodes.push(p.node);
-      }
-    }
-    const active = isStreaming && orderedNodes.length > 0 ? orderedNodes[orderedNodes.length - 1] : null;
-    const completed = orderedNodes.slice(0, isStreaming ? -1 : orderedNodes.length);
-    return { activeNode: active, completedNodes: completed };
-  }, [rawMessages, isStreaming]);
-
-  // Wrapper to handle both string and ChatMessage inputs (async to match useChat signature)
+// Wrapper to handle both string and ChatMessage inputs (async to match useChat signature)
   const sendMessage = useCallback(
     async (messageOrText?: any): Promise<void> => {
       if (!messageOrText) return;
@@ -338,13 +316,7 @@ export function Chat({
         votes={votes}
       />
 
-      <NodeGraphVisualizer
-        activeNode={activeNode}
-        completedNodes={completedNodes}
-        isStreaming={isStreaming}
-      />
-
-      <ApplicantProfilePanel
+<ApplicantProfilePanel
         isOpen={isProfilePanelOpen}
         onToggle={() => setIsProfilePanelOpen((prev) => !prev)}
         selectedProfile={selectedProfile}
