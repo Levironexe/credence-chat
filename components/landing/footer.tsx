@@ -4,7 +4,7 @@ export function LandingFooter() {
   return (
     <footer className="bg-black">
       <div className="max-w-6xl mx-auto px-6 ">
-        <div className="border-x border-border px-8 py-16 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="py-16 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <span className="font-lora text-2xl font-semibold text-white">
             Credence

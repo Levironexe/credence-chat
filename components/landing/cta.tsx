@@ -38,7 +38,7 @@ export function LandingCTA() {
             </Link>
             <Link
               href="/dashboard"
-              className="px-6 py-2.5 bg-black rounded-full border border-white/10 text-white text-sm hover:border-white/20 hover:bg-black/70 transition-colors"
+              className="px-6 py-2.5 bg-black rounded-full border border-white/10 text-white/ text-sm hover:border-white/20 hover:bg-black/70 transition-colors"
             >
               View Loan Officer Dashboard
             </Link>
