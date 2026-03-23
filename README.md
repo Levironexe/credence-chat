@@ -2,6 +2,8 @@
 
 An autonomous AI agent that talks to loan officers in plain language, picks the right ML tools for each query, and explains every decision it makes. Built to approve more creditworthy micro-SMEs at comparable risk.
 
+![Credence Landing](./public/images/landing.png)
+
 ## The Problem
 
 95% of Vietnamese businesses are micro-SMEs. 70-80% lack formal credit access — not because they're risky, but because traditional scoring models can't see them. IFC estimates 30-40% of MSME rejections come from data gaps, not actual risk.
@@ -34,54 +36,7 @@ Credence approves **2.3x more applicants** at a **lower default rate**.
 
 ## System Architecture
 
-```mermaid
-graph TB
-    subgraph Client["Frontend - Next.js 16 + React 19"]
-        UI[Chat Interface]
-        Dash[Dashboard]
-        SSEHandler[SSE Stream Handler]
-    end
-
-    subgraph Backend["Backend - FastAPI"]
-        API[REST API + SSE Streaming]
-
-        subgraph Agent["LangGraph Agent - 18 Nodes"]
-            Clf[Intent Classifier]
-            Pipe[ML Tool Pipeline]
-            Resp[Response Generator]
-        end
-
-        subgraph MLTools["5 ML Tools"]
-            T1["Credit Scoring Model"]
-            T2["SHAP Explainer"]
-            T3["Counterfactual Generator"]
-            T4["Fairness Validator"]
-            T5["Data Completeness Checker"]
-        end
-    end
-
-    subgraph LLMProvider["LLM Provider"]
-        Claude["Claude Haiku 4.5"]
-    end
-
-    subgraph DataLayer["Data Layer"]
-        Supabase[("PostgreSQL - Supabase")]
-        Artifacts[("ML Artifacts - XGBoost, DiCE, SHAP")]
-    end
-
-    UI -->|Natural language query| API
-    Dash -->|Applicant lookup| API
-    API -->|SSE events| SSEHandler
-    SSEHandler --> UI
-
-    API --> Agent
-    Agent -->|Tool-use function calling| Claude
-    Claude -->|Tool selection| Agent
-    Agent --> MLTools
-
-    MLTools --> Artifacts
-    API --> Supabase
-```
+![System Architecture](./public/images/Credence_System_Architecture_Diagram.drawio.png)
 
 ## 18-Node LangGraph Agent
 
@@ -183,47 +138,47 @@ Each step renders as a collapsible card showing parameters and results. Full tra
 
 ## Explainability Pipeline
 
-``` mermaid
-    graph LR
-        subgraph Input["Applicant Data"]
-            Raw["128 Features"]
-        end
+```mermaid
+graph LR
+    subgraph Input["Applicant Data"]
+        Raw["128 Features"]
+    end
 
-        subgraph Scoring["Credit Scoring"]
-            XGB["XGBoost Predict"]
-            Map["Score: 850 - P x 550"]
-        end
+    subgraph Scoring["Credit Scoring"]
+        XGB["XGBoost Predict"]
+        Map["Score: 850 - P x 550"]
+    end
 
-        subgraph Explain["Explainability"]
-            SHAP["TreeSHAP"]
-            WF["Waterfall Plot"]
-        end
+    subgraph Explain["Explainability"]
+        SHAP["TreeSHAP"]
+        WF["Waterfall Plot"]
+    end
 
-        subgraph Fair["Fairness"]
-            FL["FairLearn Validation"]
-        end
+    subgraph Fair["Fairness"]
+        FL["FairLearn Validation"]
+    end
 
-        subgraph CF["Counterfactual"]
-            DICE["DiCE-ML"]
-            GreedyOpt["Greedy Optimizer"]
-            Paths["3 Improvement Paths"]
-        end
+    subgraph CF["Counterfactual"]
+        DICE["DiCE-ML"]
+        GreedyOpt["Greedy Optimizer"]
+        Paths["3 Improvement Paths"]
+    end
 
-        subgraph Dec["Lending Decision"]
-            D1["800-850 Auto-approve"]
-            D2["740-799 Approve"]
-            D3["670-739 Conditional"]
-            D4["580-669 Manual review"]
-            D5["300-579 Decline + guidance"]
-        end
+    subgraph Dec["Lending Decision"]
+        D1["800-850 Auto-approve"]
+        D2["740-799 Approve"]
+        D3["670-739 Conditional"]
+        D4["580-669 Manual review"]
+        D5["300-579 Decline + guidance"]
+    end
 
-        Raw --> XGB --> Map --> Dec
-        Raw --> SHAP --> WF
-        Raw --> FL
-        Raw --> DICE
-        DICE -->|no solution| GreedyOpt
-        DICE -->|found| Paths
-        GreedyOpt --> Paths
+    Raw --> XGB --> Map --> Dec
+    Raw --> SHAP --> WF
+    Raw --> FL
+    Raw --> DICE
+    DICE -->|no solution| GreedyOpt
+    DICE -->|found| Paths
+    GreedyOpt --> Paths
 ```
 
 ## Dashboard
