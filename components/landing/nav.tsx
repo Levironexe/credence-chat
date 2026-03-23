@@ -25,7 +25,7 @@ export function LandingNav() {
       <div className="max-w-6xl mx-auto ">
       <div className="px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/landing" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <span className="font-lora text-lg font-semibold text-white tracking-tight">
             Credence
           </span>

@@ -96,14 +96,16 @@ function NodeStartBlock({
       <div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center gap-2 py-1 text-muted-foreground hover:text-muted-foreground/80"
+          className="group w-full flex items-center gap-2 py-1 text-muted-foreground hover:text-muted-foreground/80"
         >
-          {isOpen ? (
-            <ChevronDown className="w-3 h-3 shrink-0" />
-          ) : (
-            <ChevronRight className="w-3 h-3 shrink-0" />
-          )}
-          <Brain className="w-3 h-3 shrink-0 text-muted-foreground/60" />
+          <div className="relative w-3 h-3 shrink-0">
+            <Brain className="w-3 h-3 absolute inset-0 transition-all duration-150 ease-in-out group-hover:opacity-0 group-hover:scale-75" />
+            {isOpen ? (
+              <ChevronDown className="w-3 h-3 absolute inset-0 transition-all duration-150 ease-in-out opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100" />
+            ) : (
+              <ChevronRight className="w-3 h-3 absolute inset-0 transition-all duration-150 ease-in-out opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100" />
+            )}
+          </div>
           <span className="text-sm">
             {title || NODE_LABELS[node] || node.replace(/_/g, " ")}
           </span>
@@ -218,14 +220,16 @@ export function PipelineDisplay({
     <div className="border border-border/50 rounded-lg overflow-hidden mb-2">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2 bg-muted/20 hover:bg-muted/30 transition-colors"
+        className="group w-full flex items-center gap-2 px-3 py-2 bg-muted/20 hover:bg-muted/30 transition-colors"
       >
-        {isOpen ? (
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-        ) : (
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        )}
-        <Wrench className="w-4 h-4 text-muted-foreground" />
+        <div className="relative w-4 h-4 shrink-0">
+          <Wrench className="w-4 h-4 absolute inset-0 text-muted-foreground transition-all duration-150 ease-in-out group-hover:opacity-0 group-hover:scale-75" />
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4 absolute inset-0 text-muted-foreground transition-all duration-150 ease-in-out opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100" />
+          ) : (
+            <ChevronRight className="w-4 h-4 absolute inset-0 text-muted-foreground transition-all duration-150 ease-in-out opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100" />
+          )}
+        </div>
         <span className="text-sm text-muted-foreground">
           Analysis Pipeline
           {toolCount > 0 && ` \u2022 ${toolCount} tool${toolCount > 1 ? "s" : ""}`}

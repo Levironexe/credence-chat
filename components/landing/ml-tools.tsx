@@ -90,7 +90,7 @@ export function LandingMLTools() {
                 </span>
               </p>
               <Link
-                href="/"
+                href="/ml-tools"
                 className="flex justify-between items-center text-[22px] pl-4 pr-2 py-2 rounded-full bg-white text-black font-medium hover:bg-white/90 transition-colors duration-200 overflow-visible w-full"
                 onMouseEnter={() => setHoverKey((k) => k + 1)}
               >

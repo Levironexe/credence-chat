@@ -376,7 +376,7 @@ function ShapToggleView({
           <img
             src={imageUrl}
             alt="SHAP Waterfall Plot"
-            className="w-full max-w-[700px] rounded-lg"
+            className="w-full rounded-lg"
             loading="lazy"
             decoding="async"
           />

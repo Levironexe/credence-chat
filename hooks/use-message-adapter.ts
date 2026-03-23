@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { ChatMessage } from "@/lib/types";
 import type { TimelineEvent } from "@/lib/sse-handler";
 
@@ -22,6 +22,9 @@ export function useMessageAdapter(
   currentProvider?: string,
   liveTimeline?: TimelineEvent[]
 ): ChatMessage[] {
+  // Freeze provider per message so switching models doesn't change old icons
+  const providerMapRef = useRef<Record<string, string>>({});
+
   const messages = useMemo(() => {
     // Only convert if rawMessages has content (avoid overwriting initialMessages with empty array)
     if (rawMessages.length === 0) {
@@ -34,6 +37,13 @@ export function useMessageAdapter(
       // Attach live timeline to the last assistant message during streaming
       const isLastMessage = index === rawMessages.length - 1;
       const shouldAttachTimeline = isLastMessage && msg.role === "assistant" && liveTimeline && liveTimeline.length > 0;
+
+      // Lock in provider on first render of each message
+      // so switching models doesn't change icons of already-rendered messages
+      if (msg.role === "assistant" && !providerMapRef.current[msg.id]) {
+        providerMapRef.current[msg.id] = currentProvider || "anthropic";
+      }
+      const messageProvider = providerMapRef.current[msg.id] || currentProvider;
 
       // Convert MessagePart[] from SSE handler to AI SDK UIMessagePart[] format
       const parts = msg.parts && msg.parts.length > 0
@@ -85,7 +95,7 @@ export function useMessageAdapter(
         parts,
         metadata: {
           createdAt: new Date().toISOString(),
-          provider: currentProvider,
+          provider: messageProvider,
           timelineEvents: shouldAttachTimeline ? liveTimeline : undefined,
         },
       };
@@ -93,7 +103,7 @@ export function useMessageAdapter(
 
     // Prepend DB messages so previous conversation history stays visible
     return [...initialMessages, ...convertedRaw];
-  }, [rawMessages, currentProvider, liveTimeline, initialMessages]);
+  }, [rawMessages, liveTimeline, initialMessages, currentProvider]);
 
   return messages;
 }
