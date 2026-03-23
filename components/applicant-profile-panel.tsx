@@ -14,6 +14,7 @@ import {
   ShieldAlert,
   ShieldQuestion,
   Calculator,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ interface DisplayField {
   value: number | string | null;
   display: string;
   format: string;
+  options?: string[] | { value: number; label: string }[];
 }
 
 export interface ApplicantProfile {
@@ -115,6 +117,9 @@ function PureApplicantProfilePanel({
   const [isScoring, setIsScoring] = useState(false);
   const [editingFields, setEditingFields] = useState<Record<string, string>>({});
   const [isEditing, setIsEditing] = useState(false);
+  const [ratioWarnings, setRatioWarnings] = useState<Array<{
+    ratio: string; label: string; value: number; max: number; message: string;
+  }>>([]);
 
   // Refresh samples when refreshKey changes (e.g. after chat analysis saves a score)
   useEffect(() => {
@@ -220,9 +225,106 @@ function PureApplicantProfilePanel({
     }
   }, [selectedProfile, onProfileChange]);
 
-  const handleFieldEdit = useCallback((key: string, value: string) => {
-    setEditingFields((prev) => ({ ...prev, [key]: value }));
+  // Derived fields: auto-computed, read-only during editing
+  const DERIVED_FIELDS = new Set([
+    "credit_income_ratio", "annuity_income_ratio", "ext_source_mean",
+  ]);
+
+  // Which field a warning should appear under (first trigger field)
+  const WARNING_DISPLAY_FIELD: Record<string, string> = {
+    credit_income_ratio: "amt_credit",
+    annuity_income_ratio: "amt_annuity",
+    credit_goods_ratio: "amt_credit",
+  };
+
+  // Recompute derived fields + validate ratios
+  const validateAndRecompute = useCallback((fields: Record<string, string>) => {
+    const num = (k: string) => {
+      const v = fields[k];
+      if (v === undefined || v === "" || v === "N/A") return null;
+      const n = Number(v.replace(/,/g, ""));
+      return isNaN(n) ? null : n;
+    };
+
+    const income = num("amt_income_total");
+    const credit = num("amt_credit");
+    const annuity = num("amt_annuity");
+    const goods = num("amt_goods_price");
+    const ext1 = num("ext_source_1");
+    const ext2 = num("ext_source_2");
+    const ext3 = num("ext_source_3");
+
+    // Recompute derived fields
+    if (credit != null && income != null && income > 0) {
+      fields["credit_income_ratio"] = (credit / income).toFixed(2);
+    } else {
+      fields["credit_income_ratio"] = "";
+    }
+
+    if (annuity != null && income != null && income > 0) {
+      fields["annuity_income_ratio"] = (annuity / income).toFixed(2);
+    } else {
+      fields["annuity_income_ratio"] = "";
+    }
+
+    const exts = [ext1, ext2, ext3].filter((v): v is number => v != null);
+    if (exts.length > 0) {
+      fields["ext_source_mean"] = (exts.reduce((a, b) => a + b, 0) / exts.length).toFixed(3);
+    } else {
+      fields["ext_source_mean"] = "";
+    }
+
+    // Validate ratios
+    const warnings: typeof ratioWarnings = [];
+
+    if (credit != null && income != null && income > 0) {
+      const ratio = credit / income;
+      if (ratio > 12) {
+        warnings.push({
+          ratio: "credit_income_ratio", label: "Loan-to-Income",
+          value: Math.round(ratio * 100) / 100, max: 12,
+          message: `${ratio.toFixed(1)}x income. Max reliable: 12x.`,
+        });
+      }
+    }
+
+    if (annuity != null && income != null && income > 0) {
+      const ratio = annuity / income;
+      if (ratio > 0.48) {
+        warnings.push({
+          ratio: "annuity_income_ratio", label: "Payment-to-Income",
+          value: Math.round(ratio * 10000) / 10000, max: 0.48,
+          message: `${(ratio * 100).toFixed(0)}% of income. Max reliable: 48%.`,
+        });
+      }
+    }
+
+    if (credit != null && goods != null && goods > 0) {
+      const ratio = credit / goods;
+      if (ratio > 1.48) {
+        warnings.push({
+          ratio: "credit_goods_ratio", label: "Loan-to-Goods",
+          value: Math.round(ratio * 100) / 100, max: 1.48,
+          message: `${ratio.toFixed(2)}x goods price. Max reliable: 1.48x.`,
+        });
+      }
+    }
+
+    setRatioWarnings(warnings);
   }, []);
+
+  // Get warnings that should display under a specific field
+  const getFieldWarnings = useCallback((fieldKey: string) => {
+    return ratioWarnings.filter((w) => WARNING_DISPLAY_FIELD[w.ratio] === fieldKey);
+  }, [ratioWarnings]);
+
+  const handleFieldEdit = useCallback((key: string, value: string) => {
+    setEditingFields((prev) => {
+      const next = { ...prev, [key]: value };
+      validateAndRecompute(next);
+      return next;
+    });
+  }, [validateAndRecompute]);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -233,7 +335,7 @@ function PureApplicantProfilePanel({
     const updatedFields = selectedProfile.fields.map((f) => {
       if (f.key in editingFields) {
         const newVal = editingFields[f.key];
-        const numVal = Number(newVal);
+        const numVal = Number(newVal.replace(/,/g, ""));
         return {
           ...f,
           value: isNaN(numVal) ? newVal : numVal,
@@ -249,7 +351,12 @@ function PureApplicantProfilePanel({
       try {
         const fieldsPayload: Record<string, any> = {};
         for (const [key, val] of Object.entries(editingFields)) {
-          fieldsPayload[key] = val === "" ? null : val;
+          if (val === "") {
+            fieldsPayload[key] = null;
+          } else {
+            const stripped = val.replace(/,/g, "");
+            fieldsPayload[key] = isNaN(Number(stripped)) ? val : stripped;
+          }
         }
 
         const res = await fetch(
@@ -296,6 +403,7 @@ function PureApplicantProfilePanel({
 
     setIsEditing(false);
     setEditingFields({});
+    setRatioWarnings([]);
   }, [selectedProfile, editingFields, onProfileChange]);
 
   const startEditing = useCallback(() => {
@@ -305,6 +413,7 @@ function PureApplicantProfilePanel({
       fields[f.key] = f.value != null ? String(f.value) : "";
     }
     setEditingFields(fields);
+    setRatioWarnings([]);
     setIsEditing(true);
   }, [selectedProfile]);
 
@@ -458,13 +567,18 @@ function PureApplicantProfilePanel({
                         {isCustom ? "Custom Fields" : "Applicant Details"}
                       </p>
                       {isEditing ? (
-                        <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={handleSave} disabled={isSaving}>
-                          {isSaving ? (
-                            <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving</>
-                          ) : (
-                            <><Save className="h-3 w-3 mr-1" /> Save</>
-                          )}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={() => { setIsEditing(false); setEditingFields({}); setRatioWarnings([]); }} disabled={isSaving}>
+                            Cancel
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={handleSave} disabled={isSaving || ratioWarnings.length > 0}>
+                            {isSaving ? (
+                              <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Saving</>
+                            ) : (
+                              <><Save className="h-3 w-3 mr-1" /> Save</>
+                            )}
+                          </Button>
+                        </div>
                       ) : (
                         <Button size="sm" variant="ghost" className="h-6 text-xs px-2" onClick={startEditing}>
                           <Edit3 className="h-3 w-3 mr-1" /> Edit
@@ -472,27 +586,65 @@ function PureApplicantProfilePanel({
                       )}
                     </div>
 
-                    {selectedProfile.fields.map((field) => (
-                      <div
-                        key={field.key}
-                        className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
-                      >
-                        <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                          {field.label}
-                        </span>
-                        {isEditing ? (
-                          <Input
-                            className="h-6 w-28 text-xs text-right"
-                            value={editingFields[field.key] ?? String(field.value ?? "")}
-                            onChange={(e) => handleFieldEdit(field.key, e.target.value)}
-                          />
-                        ) : (
-                          <span className="text-xs font-medium tabular-nums">
-                            {field.display}
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                    {selectedProfile.fields.map((field) => {
+                      const isDerived = DERIVED_FIELDS.has(field.key);
+                      const fieldWarnings = isEditing ? getFieldWarnings(field.key) : [];
+                      return (
+                        <div key={field.key}>
+                          <div className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors">
+                            <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                              {field.label}
+                            </span>
+                            {isEditing ? (
+                              isDerived ? (
+                                <span className="text-xs font-medium tabular-nums text-muted-foreground italic">
+                                  {editingFields[field.key] || "N/A"}
+                                </span>
+                              ) : field.options ? (
+                                <Select
+                                  value={editingFields[field.key] ?? String(field.value ?? "")}
+                                  onValueChange={(v) => handleFieldEdit(field.key, v === "__clear__" ? "" : v)}
+                                >
+                                  <SelectTrigger className="h-6 w-32 text-xs">
+                                    <SelectValue placeholder="Select..." />
+                                  </SelectTrigger>
+                                  <SelectContent className="z-[200] max-h-60">
+                                    <SelectItem value="__clear__">
+                                      <span className="text-muted-foreground italic">N/A</span>
+                                    </SelectItem>
+                                    {field.options.map((opt) => {
+                                      const optValue = typeof opt === "object" ? String(opt.value) : opt;
+                                      const optLabel = typeof opt === "object" ? opt.label : opt;
+                                      return (
+                                        <SelectItem key={optValue} value={optValue}>
+                                          {optLabel}
+                                        </SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input
+                                  className="h-6 w-28 text-xs text-right"
+                                  value={editingFields[field.key] ?? String(field.value ?? "")}
+                                  onChange={(e) => handleFieldEdit(field.key, e.target.value)}
+                                />
+                              )
+                            ) : (
+                              <span className="text-xs font-medium tabular-nums">
+                                {field.display}
+                              </span>
+                            )}
+                          </div>
+                          {fieldWarnings.map((w) => (
+                            <div key={w.ratio} className="flex gap-1.5 py-1 px-2 mx-1 mb-1 rounded bg-amber-500/10 border border-amber-500/30">
+                              <AlertTriangle className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+                              <p className="text-[11px] text-amber-600 dark:text-amber-400">{w.message}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
