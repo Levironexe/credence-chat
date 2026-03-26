@@ -1,12 +1,36 @@
-# Credence: Agentic Credit Assessment for Micro-SMEs
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-light.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/logo-dark.svg" />
+    <img src="docs/images/logo-dark.svg" alt="Credence" width="360" />
+  </picture>
+</p>
+
+<p align="center">
+  <strong>Agentic Credit Assessment for Micro-SMEs</strong>
+</p>
+
+<p align="center">
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js" /></a>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+  <br/>
+  <a href="https://ui.shadcn.com/"><img src="https://img.shields.io/badge/shadcn/ui-Components-000000?style=for-the-badge&logo=shadcnui&logoColor=white" alt="shadcn/ui" /></a>
+  <a href="https://next-auth.js.org/"><img src="https://img.shields.io/badge/NextAuth.js-Auth-7B3FE4?style=for-the-badge" alt="NextAuth.js" /></a>
+  <a href="https://swr.vercel.app/"><img src="https://img.shields.io/badge/SWR-Data_Fetching-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="SWR" /></a>
+  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-Database-3FCF8E?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" /></a>
+</p>
+
+---
 
 An autonomous AI agent that talks to loan officers in plain language, picks the right ML tools for each query, and explains every decision it makes. Built to approve more creditworthy micro-SMEs at comparable risk.
 
-![Credence Landing](./public/images/landing.png)
+![Credence Assessment Demo](./public/images/demo-assessment.png)
 
 ## The Problem
 
-95% of Vietnamese businesses are micro-SMEs. 70-80% lack formal credit access — not because they're risky, but because traditional scoring models can't see them. IFC estimates 30-40% of MSME rejections come from data gaps, not actual risk.
+95% of Vietnamese businesses are micro-SMEs. 70-80% lack formal credit access -- not because they're risky, but because traditional scoring models can't see them. IFC estimates 30-40% of MSME rejections come from data gaps, not actual risk.
 
 ## What Credence Does
 
@@ -18,11 +42,11 @@ A loan officer asks a question in natural language. The LangGraph agent classifi
 |---|---|---|
 | Approved applicants | 8,595 (18.6%) | 19,592 (42.5%) |
 | Default rate among approved | 2.22% | 2.13% |
-| Additional approvals | — | +10,997 (+128%) |
+| Additional approvals | -- | +10,997 (+128%) |
 
 Credence approves **2.3x more applicants** at a **lower default rate**.
 
-1,906 applicants that traditional scoring rejects are actually creditworthy. Credence finds them — at a 2.94% default rate, well within the 1.2x parity target.
+1,906 applicants that traditional scoring rejects are actually creditworthy. Credence finds them at a 2.94% default rate, well within the 1.2x parity target.
 
 ## 5 Agent Tools
 
@@ -108,9 +132,9 @@ graph TD
 ```
 
 **Node types:**
-- **Yellow** (decision): classify, data_completeness, tool_selection, fairness_check — conditional routing
-- **Green** (ML pipeline): credit_scoring, explainability, counterfactual_generation — call ML tools directly, no LLM
-- **Blue** (LLM reasoning): planning, analysis, response — call Claude with system prompts
+- **Yellow** (decision): classify, data_completeness, tool_selection, fairness_check -- conditional routing
+- **Green** (ML pipeline): credit_scoring, explainability, counterfactual_generation -- call ML tools directly, no LLM
+- **Blue** (LLM reasoning): planning, analysis, response -- call Claude with system prompts
 
 ## Pages
 
@@ -185,16 +209,16 @@ graph LR
 
 Split-pane loan assessment review:
 
-- **CreditScoreCard** — Circular gauge (300-850), color-coded by score band
-- **ApprovalProbabilityCard** — Status badge and loan recommendation
-- **CreditFactorsList** — SHAP positive/negative factors with severity
-- **ImprovementSuggestions** — Counterfactual paths with difficulty and projected score lift
+- **CreditScoreCard** -- Circular gauge (300-850), color-coded by score band
+- **ApprovalProbabilityCard** -- Status badge and loan recommendation
+- **CreditFactorsList** -- SHAP positive/negative factors with severity
+- **ImprovementSuggestions** -- Counterfactual paths with difficulty and projected score lift
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui |
+| Frontend | Next.js 15, React 19, TypeScript, Tailwind CSS, shadcn/ui |
 | Backend | FastAPI, async Python, SQLAlchemy |
 | Agent | LangGraph (18-node state graph), LangChain |
 | LLM | Claude Haiku 4.5 (Anthropic API) |
@@ -230,13 +254,13 @@ jupyter-notebook/            # ML pipeline development
 ./start-dev.sh
 
 # Or manually:
-# Terminal 1 — Backend
+# Terminal 1 -- Backend
 cd credence-backend
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
 
-# Terminal 2 — Frontend
+# Terminal 2 -- Frontend
 cd credence-chat
 pnpm install
 pnpm dev
@@ -265,7 +289,7 @@ Frontend: http://localhost:3000
 | Fair (580-669) | 6.05% | Manual review |
 | Poor (300-579) | 16.88% | Decline + counterfactual guidance |
 
-25x default rate gradient from Exceptional to Poor — the model meaningfully separates risk.
+25x default rate gradient from Exceptional to Poor -- the model meaningfully separates risk.
 
 ## Demo
 
@@ -300,3 +324,7 @@ To reach approval (670+):
 - Kusner et al., "Counterfactual Fairness" (NeurIPS 2017)
 - Yao et al., "ReAct: Synergizing Reasoning and Acting in Language Models" (ICLR 2023)
 - Home Credit Group, "Home Credit Default Risk" (Kaggle 2018)
+
+## License
+
+This project was built for the **Swin Hackathon 2026** by **Team ClaudeCodeMax**.
